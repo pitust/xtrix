@@ -1,0 +1,6 @@
+gdb-remote 1234
+settings set target.x86-disassembly-flavor intel
+command alias mon process plugin packet monitor
+command alias info process plugin packet monitor info
+command script import util.py
+command script add -f util.pwalk_cmd pwalk
