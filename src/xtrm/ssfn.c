@@ -14,6 +14,7 @@ void ssfnc_do_init(void* src, void* lfb, uint32_t w, uint32_t h, uint32_t p) {
     ssfn_dst.fg = 0xFFFFFF;                     /* foreground color */
     ssfn_dst.bg = 0x000000;
 }
+void ssfnc_cb_scroll(void*, uint64_t fb_w, uint64_t fb_h, uint64_t fb_p, uint64_t by);
 int ssfnc_putc(uint32_t c) {
     if (ssfn_dst.x >= ssfn_dst.w) {
         int e = ssfn_putc('\n');
@@ -24,6 +25,10 @@ int ssfnc_putc(uint32_t c) {
     if (ssfn_dst.x >= ssfn_dst.w) {
         int e = ssfn_putc('\n');
         if (e) return e;
+    }
+    if (ssfn_dst.y >= ssfn_dst.h) {
+        ssfnc_cb_scroll(ssfn_dst.ptr, ssfn_dst.w, ssfn_dst.h, ssfn_dst.p, ssfn_src->height);
+        ssfn_dst.y -= ssfn_src->height;
     }
     return 0;
 }

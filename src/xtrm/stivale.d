@@ -7,9 +7,16 @@ struct StivaleModule {
     StivaleModule* next; // Pointer to the next module (if any), check module_count, in the stivale_struct
 }
 
+struct E820Entry {
+    ulong base;      // Physical address of base of the memory section
+    ulong length;    // Length of the section
+    uint type;      // Type (described below)
+    uint unused;
+}
+
 struct StivaleStruct {
     const char* cmdline; // Address of a null-terminated cmdline
-    ulong memory_map_addr; // Address of the memory map (entries described below)
+    E820Entry* memory_map_addr; // Address of the memory map (entries described below)
     ulong memory_map_entries; // Count of memory map entries
     void* framebuffer_addr; // Address of the graphical framebuffer if available.
     // Else, 0
