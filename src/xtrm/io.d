@@ -20,7 +20,7 @@ extern(C) void ssfnc_cb_scroll(uint* lfb, ulong fb_w, ulong fb_h, ulong fb_p, ul
     }
 }
 
-private enum RED = rgb(250, 25, 68);
+private enum RED = rgb(250, 15, 38);
 private enum GREEN = rgb(0, 208, 52);
 private enum YELLOW = rgb(255, 230, 89);
 private enum BLUE = rgb(0, 114, 255);
@@ -48,23 +48,25 @@ void io_fonts_initialized() {
     void* lfb;
     ssfnc_do_getstats(&_bs, &_bs, &fb_w, &fb_h, &fb_p, &lfb);
 
-    foreach (y; 0..fb_h) {
-        foreach (x; 0..fb_w) {
-            foreach (xxx; 1..5) {
-                ulong xt = (x * y + x * 9) % fb_w;
-                ulong yt = (y - x + fb_h * 3) % fb_h;
-                xt *= xxx; xt %= fb_w;
-                yt *= xxx; yt %= fb_h;
-                (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt & ~1)] = BLACK;
-                (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt | 1)] = BLACK;
+    // foreach (y; 0..fb_h) {
+    //     foreach (x; 0..fb_w) {
+    //         foreach (xxx; 1..10) {
+    //             ulong xt = (x * y + x * 9) % fb_w;
+    //             ulong yt = (y - x + fb_h * 3) % fb_h;
+    //             xt *= xxx; xt %= fb_w;
+    //             yt *= xxx; yt %= fb_h;
+    //             (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt & ~1)] = BLACK;
+    //             (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt | 1)] = BLACK;
 
-                (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt & ~1)] = BLACK;
-                (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt | 1)] = BLACK;
-            }
-        }
-    }
+    //             (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt & ~1)] = BLACK;
+    //             (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt | 1)] = BLACK;
+    //         }
+    //     }
+    // }
     foreach (y; 0..fb_h) {
+        y = fb_h - y;
         foreach (x; 0..fb_w) {
+            x = fb_w - x;
             (cast(uint*)(lfb))[y * (fb_p / 4) + x] = BLACK;
         }
     }

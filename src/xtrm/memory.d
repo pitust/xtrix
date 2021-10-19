@@ -17,13 +17,21 @@ private struct Pool {
     }
 }
 
-private __gshared Pool ppage = Pool(4096), plarge = Pool(256), psmol = Pool(256);
+private __gshared Pool ppage = Pool(4096), plarge = Pool(256), psmol = Pool(256), pquad = Pool(16);
 
 Pool* get_pool(string name) {
     if (name == "pool/page") return &ppage;
     if (name == "pool/large") return &plarge;
     if (name == "pool/small") return &psmol;
+    if (name == "pool/quad") return &pquad;
     assert(false, "Cannot get unknown pool!");
+}
+
+ulong* aquad() {
+    return cast(ulong*)allocate_on_pool(pquad);
+}
+void fquad(ulong* q) {
+    add_to_pool(pquad, cast(void*)q);
 }
 
 void* allocate_on_pool(ref Pool pool) {
