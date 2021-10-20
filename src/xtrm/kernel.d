@@ -2,6 +2,7 @@ module xtrm.kernel;
 
 import xtrm.io;
 import xtrm.vfs.vfscore;
+import xtrm.vfs.kernelfs;
 import xtrm.memory;
 import xtrm.stivale;
 import xtrm.support;
@@ -49,12 +50,13 @@ extern (C) void kmain(StivaleStruct* struc) {
 
     printf("Discovering memory regions...         "); init_mman(struc); printk("\x1b[g][done]");
     printf("Initializing VFSCore...               "); init_vfscore(struc); printk("\x1b[g][done]");
-    // printf("Initializing KernelFS...              "); init_kernelfs(struc); printk("\x1b[g][done]");
+    printf("Initializing KernelFS...              "); init_kernelfs(struc); printk("\x1b[g][done]");
     // printf("Initializing ModuleFS...              "); init_modulefs(struc); printk("\x1b[g][done]");
     // printf("Initializing TmpFS...                 "); init_tmpfs(struc); printk("\x1b[g][done]");
     // printf("Initializing SystemFS...              "); init_systemfs(struc); printk("\x1b[g][done]");
     // printf("Initializing VFSRoot...               "); init_vfsroot(struc); printk("\x1b[g][done]");
 
     memory_stats();
-    printf("$ ");
+    
+    
 }

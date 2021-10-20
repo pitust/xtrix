@@ -96,14 +96,10 @@ struct VirtualFSHandler {
     void function(XT_HANDLE* handle, ulong offset, ubyte* buffer, ref long count) write_to_handle;
 }
 
-private struct VFSListHashTableEntry {
-
-}
-
 private struct VFSListHashTableBucket {
     VFSListHashTableBucket* next;
     string nodeName;
-    VFSListHashTableEntry entry;
+    VirtualFSHandler entry;
 }
 
 private struct VFSListHashTable {
@@ -126,4 +122,21 @@ private ubyte hash(string s) {
 
 void init_vfscore(StivaleStruct* struc) {
     // no init for now
+}
+
+void definevfs(string path, VirtualFSHandler handle) {
+    ubyte h = hash(path);
+    VFSListHashTableBucket* obu = vfslist.buckets[h];
+    VFSListHashTableBucket* nbu = alloc!(VFSListHashTableBucket)();
+    nbu.nodeName = path;
+    nbu.next = obu;
+    nbu.entry = handle;
+}
+ref VirtualFSHandler getvfs(string path) {
+    VFSListHashTableBucket* bucket = vfslist.buckets[h];
+    while (bucket) {
+        if (bucket.nodeName == path) return bucket.entry;
+
+        bucket = bucket.next;
+    }
 }
