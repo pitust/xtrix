@@ -21,9 +21,9 @@ private void kernelfs_write_to_handle(XT_HANDLE* handle, ulong offset, ubyte* bu
 
 void init_kernelfs(StivaleStruct* struc) {
     definevfs("kernelfs", VirtualFSHandler(
-        kernelfs_open,
-        kernelfs_release_handle,
-        kernelfs_read_from_handle,
-        kernelfs_write_to_handle
+        &kernelfs_open,
+        &kernelfs_release_handle,
+        &kernelfs_read_from_handle,
+        &kernelfs_write_to_handle
     ));
 }

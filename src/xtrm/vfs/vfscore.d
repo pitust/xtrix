@@ -133,10 +133,11 @@ void definevfs(string path, VirtualFSHandler handle) {
     nbu.entry = handle;
 }
 ref VirtualFSHandler getvfs(string path) {
-    VFSListHashTableBucket* bucket = vfslist.buckets[h];
+    VFSListHashTableBucket* bucket = vfslist.buckets[hash(path)];
     while (bucket) {
         if (bucket.nodeName == path) return bucket.entry;
 
         bucket = bucket.next;
     }
+    assert(false, "getvfs: no such vfs");
 }

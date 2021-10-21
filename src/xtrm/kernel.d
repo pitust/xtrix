@@ -57,6 +57,4 @@ extern (C) void kmain(StivaleStruct* struc) {
     // printf("Initializing VFSRoot...               "); init_vfsroot(struc); printk("\x1b[g][done]");
 
     memory_stats();
-    
-    
 }
