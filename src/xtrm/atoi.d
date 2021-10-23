@@ -18,8 +18,8 @@ private void outputs(const(char)* s, void function(char) output) {
 ///   before_padding = sequence used before the padding
 ///   before_padding_if_was_zero = sequence used before the padding if it was zero
 ///   before_number = sequence used before the number itself
-void sprinti(
-    long value,                                 // the value to print
+void sprinti(num)(
+    num value,                                 // the value to print
     int base,                                   // the base in which to print the number
     ulong pad,                                  // the minimum amount of characters the output must be
     string padding,                             // the string to use for padding
@@ -40,7 +40,7 @@ void sprinti(
     bool numberWasZero = false;
     if (value < 0) {
         value = -value;
-        buf[--i] = '-';
+        output('-');
     }
     if (!value) {
         buf[--i] = '0';
