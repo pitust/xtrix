@@ -67,17 +67,25 @@ void add_to_pool(ref Pool pool, void* data) {
     pool.dataContained += pool.size;
 }
 
-T* alloc(T)() {
-    static if (T.sizeof > 64) {
+T* alloc(T, Args...)(Args args) {
+    import core.lifetime;
+
+    T* val;
+    static if (T.sizeof == 4096) {
+        val = cast(T*)allocate_on_pool(ppage);
+    } else static if (T.sizeof > 64) {
         static assert(T.sizeof <= 256, "Cannot allocate " ~ T.stringof ~ " on the slabheaps"
-            ~ "(spam pitust to implement 4k pool support)");
-        return cast(T*)allocate_on_pool(plarge);
+            ~ "(spam pitust to implement non-exact 4k pool support)");
+        val = cast(T*)allocate_on_pool(plarge);
     } else {
-        return cast(T*)allocate_on_pool(psmol);
+        val = cast(T*)allocate_on_pool(psmol);
     }
+    emplace(val, args);
+    return val;
 }
 
 void free(T)(T* data) {
+    destroy!(false)(data);
     free(T.sizeof, cast(void*)data);
 }
 void free(ulong count, void* data) {
