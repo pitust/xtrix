@@ -1,16 +1,16 @@
 module xtrm.cpu.gdt;
 
 private __gshared ulong[7] gdt = [
-    0x0000000000000000, // null
+    /* [ 00 ] */ 0x0000000000000000, // null
 
-    0x0000000000000000, // TSS (low)
-    0x0000000000000000, // TSS (high)
+    /* [ 08 ] */ 0x0000000000000000, // TSS (low)
+    /* [ 10 ] */ 0x0000000000000000, // TSS (high)
 
-    0x00affb000000ffff, // usermode 64-bit code
-    0x00aff3000000ffff, // usermode 64-bit data
+    /* [ 18 ] */ 0x00affb000000ffff, // usermode 64-bit code
+    /* [ 20 ] */ 0x00aff3000000ffff, // usermode 64-bit data
 
-    0x00af9b000000ffff, // 64-bit code
-    0x00af93000000ffff, // 64-bit data
+    /* [ 28 ] */ 0x00af9b000000ffff, // 64-bit code
+    /* [ 30 ] */ 0x00af93000000ffff, // 64-bit data
 ];
 
 private __gshared ubyte[10] gdtr;
