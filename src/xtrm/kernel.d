@@ -8,6 +8,7 @@ import xtrm.support;
 import xtrm.cpu.cr3;
 import xtrm.cpu.gdt;
 import xtrm.obj.vm;
+import xtrm.obj.obj;
 import xtrm.obj.thread;
 import xtrm.user.sched;
 import xtrm.interrupt.regs;
@@ -62,12 +63,25 @@ extern (C) void kmain(StivaleStruct* struc) {
 
     memory_stats();
 
-    Regs ps1;
-    ps1.rip = 0x1000;
-    VM* vm = alloc!VM;
-    vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
-    copy_to_cr3(vm.lowhalf);
-    copy_from_cr3(vm.lowhalf);
+    ubyte[] a = *alloc!(ubyte[2])();
+    a[0] = 0xeb; a[1] = 0xfe;
+
+    Regs r;
+    r.cs = 0x28;
+    r.flags = /* IF */ 0x200;
+    r.ss = 0x30;
+    r.rip = cast(ulong) a.ptr;
+    r.rsp = cast(ulong) alloc!(ubyte[4096])();
+
+    r.rsp += 4096;
+
+    Thread* t = alloc!Thread;
+    t.vm = alloc!VM;
+    t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+    t.handles = alloc!(Obj*[512])();
+    t.regs = r;
+
+    create_thread(t);
 
     init_gdt();
     init_idt();
