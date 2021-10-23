@@ -1,12 +1,17 @@
 module xtrm.kernel;
 
 import xtrm.io;
-import xtrm.vfs.vfscore;
-import xtrm.vfs.kernelfs;
+import xtrm.util;
 import xtrm.memory;
 import xtrm.stivale;
 import xtrm.support;
-import xtrm.util;
+import xtrm.cpu.cr3;
+import xtrm.cpu.gdt;
+import xtrm.obj.vm;
+import xtrm.obj.thread;
+import xtrm.user.sched;
+import xtrm.interrupt.regs;
+import xtrm.interrupt.idt;
 
 
 uint rgb(ubyte r, ubyte b, ubyte g) {
@@ -20,13 +25,15 @@ void init_mman(StivaleStruct* struc) {
         if (e.type == 1) {
             mem += e.length;
             foreach (iter; 0..(e.length >> 12)) {
-                add_to_pool(*get_pool("pool/page"), cast(void*)(e.base + (iter << 12)));
+                add_to_pool(*get_pool("pool/page"), cast(void*)(0xffff800000000000 + e.base + (iter << 12)));
             }
         }
     }
 }
 
 extern (C) void kmain(StivaleStruct* struc) {
+    init_low_half();
+
     printk("Hello, kernel!");
     ulong i = 0;
     StivaleModule* mod = struc.modules;
@@ -49,12 +56,17 @@ extern (C) void kmain(StivaleStruct* struc) {
     }
 
     printf("Discovering memory regions...         "); init_mman(struc); printk("\x1b[g][done]");
-    printf("Initializing VFSCore...               "); init_vfscore(struc); printk("\x1b[g][done]");
-    printf("Initializing KernelFS...              "); init_kernelfs(struc); printk("\x1b[g][done]");
-    // printf("Initializing ModuleFS...              "); init_modulefs(struc); printk("\x1b[g][done]");
-    // printf("Initializing TmpFS...                 "); init_tmpfs(struc); printk("\x1b[g][done]");
-    // printf("Initializing SystemFS...              "); init_systemfs(struc); printk("\x1b[g][done]");
-    // printf("Initializing VFSRoot...               "); init_vfsroot(struc); printk("\x1b[g][done]");
+    printf("Initializing the scheduler...         "); init_sched(); printk("\x1b[g][done]");
 
     memory_stats();
+
+    Regs ps1;
+    ps1.rip = 0x1000;
+    VM* vm = alloc!VM;
+    vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+    copy_to_cr3(vm.lowhalf);
+    copy_from_cr3(vm.lowhalf);
+
+    init_gdt();
+    init_idt();
 }
