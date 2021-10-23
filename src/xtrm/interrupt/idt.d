@@ -79,6 +79,5 @@ void init_idt() {
     asm {
         mov RAX, idtr_raw;
         lidt [RAX];
-        int 3;
     }
 }

@@ -12,6 +12,7 @@ import xtrm.obj.thread;
 import xtrm.user.sched;
 import xtrm.interrupt.regs;
 import xtrm.interrupt.idt;
+import xtrm.interrupt.lapic;
 
 
 uint rgb(ubyte r, ubyte b, ubyte g) {
@@ -57,6 +58,7 @@ extern (C) void kmain(StivaleStruct* struc) {
 
     printf("Discovering memory regions...         "); init_mman(struc); printk("\x1b[g][done]");
     printf("Initializing the scheduler...         "); init_sched(); printk("\x1b[g][done]");
+    printf("Initializing the local APIC...        "); init_lapic(); printk("\x1b[g][done]");
 
     memory_stats();
 
@@ -69,4 +71,8 @@ extern (C) void kmain(StivaleStruct* struc) {
 
     init_gdt();
     init_idt();
+    asm { sti; }
+    lapic_deadline_me();
+    asm { hlt; }
+    printk("hey!");
 }

@@ -3,13 +3,14 @@ module xtrm.interrupt.lapic;
 import core.volatile;
 import xtrm.cpu.msr;
 
-__gshared ulong apic_base;
+private __gshared ulong apic_base;
+enum LAPIC_DEADLINE_IRQ = 0xfe;
 
 void init_lapic() {
-    apic_base = rdmsr(/* IA32_APIC_BASE */ 0x1b) & 0xffff_ffff_ffff_f000;
+    apic_base = 0xffff800000000000 + rdmsr(/* IA32_APIC_BASE */ 0x1b) & 0xffff_ffff_ffff_f000;
     uint* sivr = cast(uint*)(apic_base + 0xF0);
     volatileStore(sivr, volatileLoad(sivr) | 0x100);
-    volatileStore(cast(uint*)(apic_base + 0x320), 0xff);
+    volatileStore(cast(uint*)(apic_base + 0x320), LAPIC_DEADLINE_IRQ);
     volatileStore(cast(uint*)(apic_base + 0x3E0), 0x03);
 }
 
