@@ -225,13 +225,29 @@ void printvalue(const(char)[] str) {
 void printvalue(immutable(char)[] str) {
     foreach (char chr; str) putc(chr);
 }
+
+void printvalue(int l) {
+    sprinti(l, 10, 0, " ", "", &putc, "", "", "", "", "");
+}
+void printhexvalue(int l) {
+    sprinti(l, 16, 0, " ", "0x", &putc, "", "", "", "", "");
+}
+
 void printvalue(long l) {
     sprinti(l, 10, 0, " ", "", &putc, "", "", "", "", "");
 }
 void printhexvalue(long l) {
     sprinti(l, 16, 0, " ", "0x", &putc, "", "", "", "", "");
 }
-void printptrvalue(long l) {
+
+void printvalue(ulong l) {
+    sprinti(l, 10, 0, " ", "", &putc, "", "", "", "", "");
+}
+void printhexvalue(ulong l) {
+    sprinti(l, 16, 0, " ", "0x", &putc, "", "", "", "", "");
+}
+
+void printptrvalue(ulong l) {
     sprinti(l, 16, 16, "0", "0x", &putc, "", "", "", "", "");
 }
 
