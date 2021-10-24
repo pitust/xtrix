@@ -2,6 +2,7 @@ module xtrm.kernel;
 
 import xtrm.io;
 import xtrm.util;
+import xtrm.util;
 import xtrm.memory;
 import xtrm.stivale;
 import xtrm.support;
@@ -60,33 +61,38 @@ extern (C) void kmain(StivaleStruct* struc) {
     printf("Discovering memory regions...         "); init_mman(struc); printk("\x1b[g][done]");
     printf("Initializing the scheduler...         "); init_sched(); printk("\x1b[g][done]");
     printf("Initializing the local APIC...        "); init_lapic(); printk("\x1b[g][done]");
+    printf("Initializing the GDT...               "); init_gdt(); printk("\x1b[g][done]");
+    printf("Initializing the IDT...               "); init_idt(); printk("\x1b[g][done]");
 
     memory_stats();
 
-    ubyte[] a = *alloc!(ubyte[2])();
-    a[0] = 0xeb; a[1] = 0xfe;
-
     Regs r;
-    r.cs = 0x28;
+    r.cs = 0x1b;
     r.flags = /* IF */ 0x200;
-    r.ss = 0x30;
-    r.rip = cast(ulong) a.ptr;
-    r.rsp = cast(ulong) alloc!(ubyte[4096])();
+    r.ss = 0x23;
+    r.rip = 0x200000;
 
-    r.rsp += 4096;
+    ubyte[] mem = *alloc!(ubyte[4096])();
+    mem[0] = 0xeb; mem[1] = 0xfe;
+
 
     Thread* t = alloc!Thread;
     t.vm = alloc!VM;
+    t.rsp0 = alloc!(ubyte[4096])();
     t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+    t.vm.map(0x200000, phys(cast(ulong)mem.ptr));
+
+
     t.handles = alloc!(Obj*[512])();
     t.regs = r;
 
     create_thread(t);
 
-    init_gdt();
-    init_idt();
-    asm { sti; }
-    lapic_deadline_me();
-    asm { hlt; }
-    printk("hey!");
+    while (true) {
+        asm { cli; }
+        printk("hey!");
+        asm { sti; }
+        lapic_deadline_me_soon();
+        asm { hlt; }
+    }
 }
