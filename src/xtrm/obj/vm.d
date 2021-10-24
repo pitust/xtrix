@@ -5,10 +5,12 @@ import xtrm.util;
 import xtrm.memory;
 import xtrm.obj.obj;
 
-// struct VMEntry { ulong addr; Memory* mem; }
+struct VMEntry { ulong addr; Memory* mem; }
 struct VM {
     Obj obj = Obj(ObjType.vm); alias obj this;
     ulong[256]* lowhalf;
+    VMEntry[256]* vme;
+    ulong vme_count = 0;
 
     private ulong* get_ptr_ptr(ulong va) {
         assert(lowhalf, "No lowhalf!");

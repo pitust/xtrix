@@ -79,6 +79,7 @@ extern (C) void kmain(StivaleStruct* struc) {
     Thread* t = alloc!Thread;
     t.vm = alloc!VM;
     t.rsp0 = alloc!(ubyte[4096])();
+    t.vm.vme = alloc!(VMEntry[256]*);
     t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
     t.vm.map(0x200000, phys(cast(ulong)mem.ptr));
 
@@ -90,7 +91,7 @@ extern (C) void kmain(StivaleStruct* struc) {
 
     while (true) {
         asm { cli; }
-        printk("hey!");
+        printk("rescheduling!");
         asm { sti; }
         lapic_deadline_me_soon();
         asm { hlt; }

@@ -1,11 +1,12 @@
 module xtrm.user.sched;
 
 import xtrm.memory;
+import xtrm.cpu.tss;
 import xtrm.cpu.cr3;
-import xtrm.interrupt.regs;
 import xtrm.obj.obj;
 import xtrm.obj.vm;
 import xtrm.obj.thread;
+import xtrm.interrupt.regs;
 
 private struct ThreadEntry {
     Thread* thr;
@@ -21,6 +22,7 @@ void init_sched() {
     _cur.thr = alloc!Thread;
     _cur.next = _cur;
     _cur.vm = alloc!VM;
+    _cur.vm.vme = alloc!(VMEntry[256]*);
     _cur.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
     _cur.handles = alloc!(Obj*[512])();
     _cur.rsp0 = alloc!(ubyte[4096])();
@@ -46,4 +48,5 @@ void sched_save_preirq(Regs* r) {
 void sched_restore_postirq(Regs* r) {
     *r = _cur.regs;
     copy_to_cr3(_cur.vm.lowhalf);
+    set_rsp0(*_cur.rsp0);
 }

@@ -1,6 +1,7 @@
 module xtrm.cpu.gdt;
 
 import xtrm.cpu.tss;
+import ldc.llvmasm;
 
 private __gshared ulong[7] gdt = [
     /* [ 00 ] */ 0x0000000000000000, // null
@@ -35,5 +36,5 @@ void init_gdt() {
         mov RAX, gdtr_raw;
         lgdt [RAX];
     }
-
+    __asm("ltr $0", "{ax}", cast(ushort)0x08);
 }
