@@ -63,21 +63,23 @@ void io_fonts_initialized() {
     void* lfb;
     ssfnc_do_getstats(&_bs, &_bs, &fb_w, &fb_h, &fb_p, &lfb);
 
-    // foreach (y; 0..fb_h) {
-    //     foreach (x; 0..fb_w) {
-    //         foreach (xxx; 1..10) {
-    //             ulong xt = (x * y + x * 9) % fb_w;
-    //             ulong yt = (y - x + fb_h * 3) % fb_h;
-    //             xt *= xxx; xt %= fb_w;
-    //             yt *= xxx; yt %= fb_h;
-    //             (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt & ~1)] = BLACK;
-    //             (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt | 1)] = BLACK;
+    version (SmoothStart) {
+        foreach (y; 0..fb_h) {
+            foreach (x; 0..fb_w) {
+                foreach (xxx; 1..10) {
+                    ulong xt = (x * y + x * 9) % fb_w;
+                    ulong yt = (y - x + fb_h * 3) % fb_h;
+                    xt *= xxx; xt %= fb_w;
+                    yt *= xxx; yt %= fb_h;
+                    (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt & ~1)] = BLACK;
+                    (cast(uint*)(lfb))[(yt & ~1) * (fb_p / 4) + (xt | 1)] = BLACK;
 
-    //             (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt & ~1)] = BLACK;
-    //             (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt | 1)] = BLACK;
-    //         }
-    //     }
-    // }
+                    (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt & ~1)] = BLACK;
+                    (cast(uint*)(lfb))[(yt | 1) * (fb_p / 4) + (xt | 1)] = BLACK;
+                }
+            }
+        }
+    }
     foreach (y; 0..fb_h) {
         y = fb_h - y;
         foreach (x; 0..fb_w) {

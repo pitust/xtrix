@@ -1,1 +1,1 @@
-sh tools/all.sh
+KERNEL_VER_SMOOTHSTART=1 sh tools/all.sh
