@@ -23,6 +23,7 @@ void init_sched() {
     _cur.vm = alloc!VM;
     _cur.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
     _cur.handles = alloc!(Obj*[512])();
+    _cur.rsp0 = alloc!(ubyte[4096])();
 }
 
 void create_thread(Thread* t) {

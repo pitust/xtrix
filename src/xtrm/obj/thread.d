@@ -10,4 +10,5 @@ struct Thread {
     Regs regs;
     VM* vm;
     Obj*[512]* handles;
+    ubyte[4096]* rsp0;
 }
