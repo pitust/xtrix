@@ -12,6 +12,7 @@ import xtrm.obj.vm;
 import xtrm.obj.obj;
 import xtrm.obj.thread;
 import xtrm.user.sched;
+import xtrm.obj.memory;
 import xtrm.interrupt.regs;
 import xtrm.interrupt.idt;
 import xtrm.interrupt.lapic;
@@ -72,16 +73,14 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.ss = 0x23;
     r.rip = 0x200000;
 
-    ubyte[] mem = *alloc!(ubyte[4096])();
-    mem[0] = 0xeb; mem[1] = 0xfe;
-
-
+    Memory* mem = Memory.allocate(2);
     Thread* t = alloc!Thread;
     t.vm = alloc!VM;
     t.rsp0 = alloc!(ubyte[4096])();
-    t.vm.vme = alloc!(VMEntry[256]*);
+    t.vm.vme = alloc!(VMEntry[256]);
     t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
-    t.vm.map(0x200000, phys(cast(ulong)mem.ptr));
+    t.vm.map(0x200000, mem);
+    mem.write16(0, 0xfeeb);
 
 
     t.handles = alloc!(Obj*[512])();

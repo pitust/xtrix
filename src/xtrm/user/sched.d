@@ -22,7 +22,7 @@ void init_sched() {
     _cur.thr = alloc!Thread;
     _cur.next = _cur;
     _cur.vm = alloc!VM;
-    _cur.vm.vme = alloc!(VMEntry[256]*);
+    _cur.vm.vme = alloc!(VMEntry[256]);
     _cur.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
     _cur.handles = alloc!(Obj*[512])();
     _cur.rsp0 = alloc!(ubyte[4096])();

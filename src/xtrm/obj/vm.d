@@ -4,6 +4,7 @@ import xtrm.io;
 import xtrm.util;
 import xtrm.memory;
 import xtrm.obj.obj;
+import xtrm.obj.memory;
 
 struct VMEntry { ulong addr; Memory* mem; }
 struct VM {
@@ -35,7 +36,13 @@ struct VM {
         return &pte[(va_val >> 12) & 0x1ff];
     }
 
-    void map(ulong va, ulong phy) {
-        *get_ptr_ptr(va) = phys(phy) | 7;
+    void map(ulong va, Memory* phy) {
+        (*vme)[vme_count++] = VMEntry(va, phy);
+        phy.rc += 1;
+        foreach (i; 0 .. phy.pgCount) {
+            ulong phyaddr = phys((*phy.pages)[i]);
+            printk("map: {*} -> {*}", va + (i << 12), phyaddr);
+            *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
+        }
     }
 }
