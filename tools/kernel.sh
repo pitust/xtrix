@@ -1,2 +1,1 @@
-sh kernel/build.sh
-sh makeiso.sh
+sh tools/kernel/build.sh

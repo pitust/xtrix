@@ -38,6 +38,8 @@ void init_mman(StivaleStruct* struc) {
 extern (C) void kmain(StivaleStruct* struc) {
     init_low_half();
 
+    StivaleModule* init = null;
+
     printk("Hello, kernel!");
     ulong i = 0;
     StivaleModule* mod = struc.modules;
@@ -45,7 +47,7 @@ extern (C) void kmain(StivaleStruct* struc) {
         if (mod.name[0] == 0) {
             assert(false, "No anonymous modules pls");
         }
-        if (strisequal(mod.name.ptr, "font.sfn")) {
+        if (strisequal(mod.name.ptr, "font")) {
             ssfnc_do_init(mod.begin, struc.framebuffer_addr, struc.framebuffer_width, struc.framebuffer_height, struc
                     .framebuffer_pitch);
             
@@ -55,15 +57,21 @@ extern (C) void kmain(StivaleStruct* struc) {
             printk("This is free software, and you are welcome to redistribute it");
             printk("under certain conditions; type `ktool --gpl c' for details.\n");
         }
+        if (strisequal(mod.name.ptr, "init")) {
+            init = mod;
+        }
         
         i++;
+        mod = mod.next;
     }
 
-    printf("Discovering memory regions...         "); init_mman(struc); printk("\x1b[g][done]");
-    printf("Initializing the scheduler...         "); init_sched(); printk("\x1b[g][done]");
-    printf("Initializing the local APIC...        "); init_lapic(); printk("\x1b[g][done]");
-    printf("Initializing the GDT...               "); init_gdt(); printk("\x1b[g][done]");
-    printf("Initializing the IDT...               "); init_idt(); printk("\x1b[g][done]");
+    if (!init) assert(false, "no init :death:");
+
+    _printf("Discovering memory regions...         "); init_mman(struc); printk("\x1b[g][done]");
+    _printf("Initializing the scheduler...         "); init_sched(); printk("\x1b[g][done]");
+    _printf("Initializing the local APIC...        "); init_lapic(); printk("\x1b[g][done]");
+    _printf("Initializing the GDT...               "); init_gdt(); printk("\x1b[g][done]");
+    _printf("Initializing the IDT...               "); init_idt(); printk("\x1b[g][done]");
 
     memory_stats();
 
@@ -71,17 +79,56 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.cs = 0x1b;
     r.flags = /* IF */ 0x200;
     r.ss = 0x23;
-    r.rip = 0x200000;
 
-    Memory* mem = Memory.allocate(2);
     Thread* t = alloc!Thread;
     t.vm = alloc!VM;
     t.rsp0 = alloc!(ubyte[4096])();
     t.vm.vme = alloc!(VMEntry[256]);
     t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
-    t.vm.map(0x200000, mem);
-    mem.write16(0, 0xfeeb);
 
+    ulong addr = cast(ulong)virt(init.begin);
+    ulong len = init.end - init.begin;
+    ubyte[] data = ArrayRepr!(ubyte).from(cast(ubyte*)addr, len).into();
+
+    enum off_e_entry = 24;
+    enum off_e_phoff = off_e_entry + 8;
+    enum off_e_phentsize = off_e_phoff + 8 + 8 + 4 + 2;
+    enum off_e_phnum = off_e_phentsize + 2;
+
+    enum off_p_type = 0;
+    enum off_p_offset = 8;
+    enum off_p_vaddr = off_p_offset + 8;
+    enum off_p_filesz = off_p_vaddr + 16;
+    enum off_p_memsz = off_p_filesz + 8;
+
+    ulong e_entry = *cast(ulong*)&data[off_e_entry];
+    ushort e_phnum = *cast(ushort*)&data[off_e_phnum];
+    ushort e_phentsize = *cast(ushort*)&data[off_e_phentsize];
+    ulong e_phoff = *cast(ulong*)&data[off_e_phoff];
+
+    foreach (phdr; 0 .. e_phnum) {
+        ulong curphoff = e_phoff + e_phentsize * phdr;
+
+        uint p_type = *cast(uint*)&data[curphoff + off_p_type];
+        ulong p_offset = *cast(ulong*)&data[curphoff + off_p_offset];
+        ulong p_vaddr = *cast(ulong*)&data[curphoff + off_p_vaddr];
+        ulong p_filesz = *cast(ulong*)&data[curphoff + off_p_filesz];
+        ulong p_memsz = *cast(ulong*)&data[curphoff + off_p_memsz];
+
+        if (p_type != 1) continue;
+        Memory* mm = Memory.allocate(p_memsz);
+        mm.write(0, ArrayRepr!(ubyte).from(&data[p_offset], p_filesz).into());
+
+        serial_printk("copy {x} bytes @ {*} -> {*}", p_filesz, p_offset, p_vaddr);
+        if (p_memsz != p_filesz) serial_printk("set {x} bytes @ {*}", p_memsz - p_filesz, p_offset + p_filesz);
+        t.vm.map(p_vaddr, mm);
+        mm.release(); // release handle on the stack
+    }
+    Memory* stack = Memory.allocate(0x4000);
+    t.vm.map(0xfe0000000, stack);
+    r.rip = e_entry;
+    r.rsp = 0xfe0004000;
+    stack.release();
 
     t.handles = alloc!(Obj*[512])();
     t.regs = r;
@@ -89,8 +136,6 @@ extern (C) void kmain(StivaleStruct* struc) {
     create_thread(t);
 
     while (true) {
-        asm { cli; }
-        printk("rescheduling!");
         asm { sti; }
         lapic_deadline_me_soon();
         asm { hlt; }

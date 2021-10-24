@@ -1,5 +1,7 @@
 module xtrm.obj.obj;
 
+import xtrm.io;
+
 enum ObjType {
     nullobj,
     mem,
@@ -15,4 +17,11 @@ enum ObjType {
 struct Obj {
     ObjType type;
     ulong rc = 1;
+
+    void release() {
+        rc--;
+        if (rc == 0) {
+            printk("[obj] should release a kernel object!");
+        }
+    }
 }

@@ -216,6 +216,37 @@ void printvalue(IOTuple!ulong value) {
         }
         return;
     }
+    if (value.fmt == "x86/irq") {
+        if (value.value == 0xfe) return printvalue("LAPIC");
+        if (value.value == 0x00) return printvalue("DE");
+        if (value.value == 0x01) return printvalue("DB");
+        if (value.value == 0x02) return printvalue("NMI");
+        if (value.value == 0x03) return printvalue("BP");
+        if (value.value == 0x04) return printvalue("OF");
+        if (value.value == 0x05) return printvalue("BR");
+        if (value.value == 0x06) return printvalue("UD");
+        if (value.value == 0x07) return printvalue("NM");
+        if (value.value == 0x08) return printvalue("DF");
+        if (value.value == 0x0a) return printvalue("TS");
+        if (value.value == 0x0b) return printvalue("NP");
+        if (value.value == 0x0c) return printvalue("SS");
+        if (value.value == 0x0d) return printvalue("GP");
+        if (value.value == 0x0e) return printvalue("PF");
+        if (value.value == 0x10) return printvalue("MF");
+        if (value.value == 0x11) return printvalue("AC");
+        if (value.value == 0x12) return printvalue("MC");
+        if (value.value == 0x13) return printvalue("XM");
+        if (value.value == 0x14) return printvalue("VE");
+        if (value.value == 0x1e) return printvalue("SX");
+        if (value.value >= 0x100) {
+            printvalue("SYS(0x");
+            sprinti(value.value - 0x100, 16, 2, "0", "", &putc, "", "", "", "", "");
+            printvalue(")");
+            return;
+        }
+        sprinti(value.value, 16, 2, "0", "", &putc, "", "", "", "", "");
+        return;
+    }
 
     printvalue("<unknown ulong formatter "); printvalue(value.fmt); printvalue(">");
 }
@@ -377,7 +408,7 @@ private void do_printk(bool newline, Args...)(string s, Args args) {
 void printk(Args...)(string s, Args args) {
     do_printk!(true, Args)(s, args);
 }
-void printf(Args...)(string s, Args args) {
+void _printf(Args...)(string s, Args args) {
     do_printk!(false, Args)(s, args);
 }
 private void serial_printf(Args...)(string s, Args args) {
@@ -386,7 +417,7 @@ private void serial_printf(Args...)(string s, Args args) {
     do_printk!(false, Args)(s, args);
     serial_printk_ctx = fi;
 }
-private void serial_printk(Args...)(string s, Args args) {
+void serial_printk(Args...)(string s, Args args) {
     bool fi = serial_printk_ctx;
     serial_printk_ctx = true;
     do_printk!(true, Args)(s, args);

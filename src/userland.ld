@@ -1,4 +1,3 @@
-/* Tell the linker that we want an x86_64 ELF64 output file */
 OUTPUT_FORMAT(elf64-x86-64)
 OUTPUT_ARCH(i386:x86-64)
 
@@ -13,31 +12,21 @@ PHDRS
 
 SECTIONS
 {
-    . = 0xffffffff80200000;
+    . = 0x0000000000200000;
 
-    .text : {
+    .text : ALIGN(4096) {
         *(.text*)
     } :text
 
-    . += 0x1000;
-
-    .stivalehdr : {
-        KEEP(*(.stivalehdr))
-    } :rodata
-
-    . += 0x1000;
-
-    .rodata : {
+    .rodata : ALIGN(4096) {
         *(.rodata*)
     } :rodata
 
-    . += 0x1000;
-
-    .data : {
+    .data : ALIGN(4096) {
         *(.data*)
     } :data
 
-    .bss : {
+    .bss : ALIGN(4096) {
         *(COMMON)
         *(.bss*)
     } :data

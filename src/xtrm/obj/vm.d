@@ -6,7 +6,15 @@ import xtrm.memory;
 import xtrm.obj.obj;
 import xtrm.obj.memory;
 
-struct VMEntry { ulong addr; Memory* mem; }
+struct VMEntry {
+    ulong addr; Memory* mem;
+
+    bool contains(ulong va) {
+        if (va < addr) return false;
+        if (va >= addr + (mem.pgCount << 12)) return false;
+        return true;
+    }
+}
 struct VM {
     Obj obj = Obj(ObjType.vm); alias obj this;
     ulong[256]* lowhalf;
@@ -41,8 +49,17 @@ struct VM {
         phy.rc += 1;
         foreach (i; 0 .. phy.pgCount) {
             ulong phyaddr = phys((*phy.pages)[i]);
-            printk("map: {*} -> {*}", va + (i << 12), phyaddr);
+            serial_printk("map: {*} -> {*}", va + (i << 12), phyaddr);
             *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
         }
+    }
+    Memory* region_for(ulong va, out ulong offset) {
+        foreach (i; 0 .. vme_count) {
+            if ((*vme)[i].contains(va)) {
+                offset = va - (*vme)[i].addr;
+                return (*vme)[i].mem;
+            }
+        }
+        return null;
     }
 }

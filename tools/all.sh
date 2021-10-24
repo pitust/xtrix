@@ -1,3 +1,3 @@
 set -ex
 
-sh kernel.sh && sh userland.sh && sh makeiso.sh
+sh tools/kernel.sh && sh tools/userland.sh && sh tools/makeiso.sh

@@ -47,13 +47,17 @@ void sprinti(num)(
         chars++;
         numberWasZero = true;
     }
+    bool dig = false;
     while (value) {
         buf[--i] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"[value % base];
         value /= base;
         chars++;
+        dig = !dig;
     }
     ulong padi = 0;
+    if (dig &&base == 16 && pad == 0) buf[--i] = '0';
     if (numberWasZero) {
+        if (base == 16 && pad == 0) buf[--i] = '0';
         outputs(before_padding_if_was_zero, output);
         while ((chars + padi) < pad) output(padding[padi++ % padding.length]);
         outputs(reset, output);
