@@ -33,7 +33,7 @@ void lapic_deadline_me() {
     volatileStore(cast(uint*)(apic_base + 0x380), 0xffff);
 }
 void lapic_deadline_me_soon() {
-    volatileStore(cast(uint*)(apic_base + 0x380), /* soon */ 1);
+    volatileStore(cast(uint*)(apic_base + 0x380), /* soon */ 100);
 }
 void lapic_eoi() {
     volatileStore(cast(uint*)(apic_base + 0xB0), 0);
