@@ -16,17 +16,10 @@
 
 module progs.hello.hello;
 
-void log(string s) {
-    ulong leng = s.length;
-    immutable(char)* strd = s.ptr;
-    asm {
-        mov RDI, leng;
-        mov RSI, strd;
-        int 0x10;
-    }
-}
+import libxtrix.io;
 
+/// _start is the OS-invoked entrypoint for xtrix user programs
 extern (C) void _start() {
-    log("hello, world!");
-    while (true) {}
+    printf("hello, world!");
+	while (true) {}
 }
