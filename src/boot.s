@@ -34,5 +34,5 @@ section .stivalehdr
 
 section .bss
 stack_bottom:
-    resb 0x1000
+    resb 0x4000
 stack_top:
