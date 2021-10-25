@@ -151,8 +151,6 @@ extern (C) void kmain(StivaleStruct* struc) {
     create_thread(t);
 
     while (true) {
-        asm { sti; }
-        lapic_deadline_me_soon();
-        asm { hlt; }
+        asm { cli; int 0xfe; }
     }
 }
