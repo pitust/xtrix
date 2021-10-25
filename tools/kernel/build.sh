@@ -17,5 +17,5 @@ else
 fi
 nasm -felf64 src/boot.s -o build/kernel/boot.o
 nasm -felf64 src/xtrm/interrupt/isr.s -o build/kernel/isrcommon.o
-x86_64-elf-gcc -Iinc src/xtrm/ssfn.c -Iscalable-font2 -c -o build/kernel/c_ssfn.o
+clang -target x86_64-elf -Iinc src/xtrm/ssfn.c -Iscalable-font2 -c -o build/kernel/c_ssfn.o
 ld.lld build/kernel/*.o -o build/kernel.elf -T src/kernel.ld
