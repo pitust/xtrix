@@ -45,7 +45,6 @@ struct Memory {
             ulong page = off >> 12;
             ulong pageoff = off & 0xfff;
             assert((*pages)[page]);
-            serial_printk("write: {x} -> {*}", b, phys((*pages)[page] + pageoff));
             *cast(ubyte*)virt((*pages)[page] + pageoff) = b;
         }
     }
@@ -54,7 +53,6 @@ struct Memory {
             ulong off = offset + i;
             ulong page = off >> 12;
             ulong pageoff = off & 0xfff;
-            assert((*pages)[page], "Out of bounds read!!!");
             values[i] = *cast(ubyte*)virt((*pages)[page] + pageoff);
         }
     }
