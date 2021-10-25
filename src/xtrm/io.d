@@ -87,6 +87,7 @@ void io_fonts_initialized() {
             (cast(uint*)(lfb))[y * (fb_p / 4) + x] = BLACK;
         }
     }
+	ssfnc_do_setcolor(BLACK, WHITE);
 }
 void outb(ushort port, ubyte value) {
     asm {
@@ -414,7 +415,7 @@ private void do_printk(bool newline, Args...)(string s, Args args) {
         si++;
     }
     if (fonts_init) {
-        ssfnc_do_setcolor(0, 0xFF_FF_FF);
+        ssfnc_do_setcolor(0, WHITE);
     }
     if (!serial_printk_ctx) {
         nographics_putc('\x1b'); nographics_putc('['); nographics_putc('0'); nographics_putc('m');
