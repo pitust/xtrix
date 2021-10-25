@@ -1,0 +1,12 @@
+{
+	"name": "xtrix",
+	"description": "A shitty OS",
+	"authors": ["pitust <piotr@stelmaszek.com>"],
+	"homepage": "https://git.sr.ht/~pitust/xtrix",
+	"buildOptions": [
+		"betterC"
+	],
+	"importPaths": [
+		"src"
+	]
+}
