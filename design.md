@@ -1,0 +1,83 @@
+# xtrix design
+## syscalls
+ - triggered with int (10h + syscall number)
+ - sysv: rdi is sysno; rsi, rdx, rcx is args; rax is return
+ - minimal syscall set:
+     - (0) KeLog(len, str*)
+     - manipulating VMs
+         - (1) KeCreateVM() -> vm
+         - (2) KeAssignVM(thr, vm)
+         - (3) KeCreateVMFromELF(memref, entry* | nil) -> vm
+         - (4) KeGetVMFromThread(thr) -> vm
+         - (5) KeASLRAddress(vm) -> `addr` such that KeGetMemoryObjectByAddress(vm, addr, nil) is nullobj
+     - manipulating threads
+         - (6) KeCreateThread(vm, rip, rdi, rsi, rdx, rsp) -> thr
+         - (7) KeChangeThreadStopCounter(thr, delta) -> thr.counter += delta, thr. counter
+         - (8) KeSendSignal(sig, rsi)
+         - (9) KeCreateSignal(thr, rip, rdi) -> sig
+         - (a) KeGetSelfThread() -> thr
+     - memory objects
+         - (b) KeAllocateMemoryObject(size) -> mem
+         - (c) KeAllocateMemRefObject(addr, size) -> memref
+         - (d) KeGetMemObjectSize(mem | memref) -> int
+         - (e) KeReadMemRefObject(memref, addr)
+         - (f) KeAddMemoryObjectToVM(vm, mem, addr)
+         - (10) KeGetMemoryObjectByAddress(vm, addr, size* | nil) -> mem | nullobj
+     - objects
+         - (11) KeCloneObject(obj) -> obj
+         - (12) KeDeleteObject(handle[obj])
+         - (13) KeRefCount(obj) -> int
+         - (14) KeGetType(obj) -> objtype
+         - (15) KeIsNull(obj) -> `bool` true if KeGetType(obj) is nullobj, else false
+     - channels
+         - (16) KeCreateChannel() -> chan
+         - (17) KeCreateNamedChannel(name) -> chan
+         - (18) KeDestroyChannel(chan)
+         - (19) KeGetChannelByName(name) -> chan
+         - (1a) KeMakeInfiniteChannel(chan, isinfinite)
+         - (1b) KePushMessage(chan, obj) -> void
+         - (1c) KePopMessage(chan) -> obj
+         - (1d) KePopMessageAsync(chan, thr, sig) -> obj
+     - credentials
+         - (1e) KeCreateCred(name) -> cred
+         - (1f) KeCredVerity(cred) -> credverity
+         - (20) KeCredProve(cred, obj) -> credproof
+         - (21) KeCheckCred(credproof, credverity) -> `credproof.obj` if credproof.cred is credverity.cred, nullobj otherwise
+         - (22) KeLockNamedChannels(credverity)
+ - objects:
+     - nullobj
+     - mem
+         - size
+         - phys
+     - memref
+         - size
+         - data*
+     - vm
+         - { addr, mem }[]
+         - pagetable
+     - thr
+         - obj[512]
+         - regs
+         - vm
+     - chan
+         - write: int
+         - read: int
+         - obj[512]*
+         - mode: enum[finite, infinite]
+     - cred
+         - name (str)
+     - credproof
+         - cred*
+         - obj
+     - credverity
+         - cred*
+ - init is pretty easy:
+     - let initelf: memref = module("init.elf")
+     - let initrd: memref = module("initrd.bin")
+     - let entry = 0
+     - let vm = KeCreateVMFromELF(initelf, &entry)
+     - let stack = KeASLRAddress(vm)
+     - KeAddMemoryObjectToVM(vm, KeAllocateMemoryObject(0x1000), stack)
+     - let thr = KeCreateThread(vm, entry, 0, 0, 0, stack + 0x1000)
+     - KePushMessage(KeCreateNamedChannel("kernel:initprocess"), thr)
+     - KePushMessage(KeCreateNamedChannel("kernel:initrd"), initrd)
