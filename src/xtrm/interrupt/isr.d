@@ -27,6 +27,16 @@ extern(C) void interrupt_handler(Regs* r) {
         r.isr = (r.error >> 4) + 0xf0;
     }
     serial_printk("rx irq #{}!", iotuple("x86/irq", r.isr));
+	if (r.isr == 0xe) {
+		printk("Got page fault while executing code in ring{}", r.cs & 3);
+		ulong cr2;
+		asm {
+			mov RAX, CR2;
+			mov cr2, RAX;
+		}
+		printk("cr2: {*}", cr2);
+		printk("flags: {x}", r.flags);
+	}
 
     if (r.isr == LAPIC_DEADLINE_IRQ) {
         sched_yield();
@@ -38,8 +48,8 @@ extern(C) void interrupt_handler(Regs* r) {
         return;
     }
     if (r.isr >= 0x100) {
+		sched_restore_postirq(r);
         syscall_handler(r.isr - 0x100, r);
-        sched_restore_postirq(r);
         r.rip += 2;
         return;
     }
