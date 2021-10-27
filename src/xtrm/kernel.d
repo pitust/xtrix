@@ -139,10 +139,12 @@ extern (C) void kmain(StivaleStruct* struc) {
         t.vm.map(p_vaddr, mm);
         mm.release(); // release handle on the stack
     }
-    Memory* stack = Memory.allocate(0x4000);
+
+	enum STACK_SIZE = 0x4000;
+	Memory* stack = Memory.allocate(STACK_SIZE);
     t.vm.map(0xfe0000000, stack);
     r.rip = e_entry;
-    r.rsp = 0xfe0004000;
+    r.rsp = 0xfe0000000 + STACK_SIZE;
     stack.release();
 
     t.handles = alloc!(Obj*[512])();
