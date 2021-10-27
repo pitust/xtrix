@@ -17,9 +17,13 @@
 module progs.hello.hello;
 
 import libxtrix.io;
+import libxtrix.syscall;
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
 extern (C) void _start() {
-    printf("hello, world!");
+    printf("creating a channel...");
+	XHandle h = KeCreateChannel();
+	if (h.isError) assert(false, "KeCreateChannel failed!");
+		
 	while (true) {}
 }
