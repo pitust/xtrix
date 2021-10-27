@@ -20,14 +20,23 @@ import xtrm.obj.memory;
 import xtrm.user.sched;
 import xtrm.interrupt.regs;
 
+enum error {
+	type_error,
+	perm_error,
+	lock_error,
+	todo_error
+}
+
+__gshared char[8192] ke_log_buffer;
+
 void syscall_handler(ulong sys, Regs* r) {
     if (sys == 0) {
-        if (r.rdi > 64) r.rdi = 64;
 
         ulong offset;
-        char[64] messagebuf;
-        char[] message = messagebuf[0 .. r.rdi];
+        char[] message = ke_log_buffer[0 .. r.rdi];
         Memory* range = current.vm.region_for(r.rsi, offset);
+        if (r.rdi > 8192) r.rdi = 8192;
+        if (r.rdi > (range.pgCount << 12)) r.rdi = range.pgCount << 12;
         if (range == null) {
             printk("[user] warn: efault while handlink KeLog!");
             return;
@@ -36,6 +45,8 @@ void syscall_handler(ulong sys, Regs* r) {
 
         printk("[user] {}", message);
     } else {
-        printk("[user] warn: enosys {}", sys);
-    }
+        printk("[user] warn: enosys {x}", sys);
+		r.rax = cast(ulong)(-1 - cast(long)error.todo_error);
+		printk("we set rax to {x}", r.rax);
+	}
 }
