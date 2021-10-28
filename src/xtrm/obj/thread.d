@@ -26,4 +26,12 @@ struct Thread {
     VM* vm;
     Obj*[512]* handles;
     ubyte[4096]* rsp0;
+    long allocateHandle() {
+        assert(handles);
+        foreach (i; 0 .. 512) {
+            if ((*handles)[i]) continue;
+            return i;
+        }
+        return -1;
+    }
 }
