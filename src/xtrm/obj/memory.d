@@ -20,12 +20,12 @@ import xtrm.util;
 import xtrm.memory;
 import xtrm.obj.obj;
 
-
 struct Memory {
     Obj obj = Obj(ObjType.mem); alias obj this;
     ulong pgCount;
     ulong[32]* pages;
 
+    // lifetime(returned value): returned value is owned by the caller
     static Memory* allocate(ulong size) {
         Memory* m = alloc!(Memory)();
         size = (size + 4095) & ~0xfff;
