@@ -60,6 +60,5 @@ void syscall_handler(ulong sys, Regs* r) {
     } else {
         printk("[user] warn: enosys {x}", sys);
 		r.rax = cast(ulong)(error.ENOSYS);
-		printk("we set rax to {x}", r.rax);
 	}
 }
