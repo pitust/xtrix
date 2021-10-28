@@ -59,6 +59,7 @@ struct VM {
         return &pte[(va_val >> 12) & 0x1ff];
     }
 
+    // lifetime(phy): phy is owned by the caller
     void map(ulong va, Memory* phy) {
         (*vme)[vme_count++] = VMEntry(va, phy);
         phy.rc += 1;
@@ -68,6 +69,7 @@ struct VM {
             *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
         }
     }
+    // lifetime(returned value): returned value is owned by the virtual memory object
     Memory* region_for(ulong va, out ulong offset) {
         foreach (i; 0 .. vme_count) {
             if ((*vme)[i].contains(va)) {
