@@ -22,9 +22,11 @@ import libxtrix.syscall;
 /// _start is the OS-invoked entrypoint for xtrix user programs
 extern (C) void _start() {
     printf("creating a channel...");
-	XHandle h = KeCreateChannel();
-	if (h.isError) assert(false, "KeCreateChannel failed!");
-	printf("handle: {}", h.getHandle());
+	XHandle chan = KeCreateChannel();
+	if (chan.isError) assert(false, "KeCreateChannel failed!");
+	printf("handle: {}", chan.getHandle());
+	XHandle data = KeAllocateMemRefObject("hello, channel world!");
+	if (data.isError) assert(false, "KeAllocateMemRefObject failed!");
 
 	while (true) {}
 }
