@@ -31,7 +31,6 @@ __gshared char[8192] ke_log_buffer;
 
 void syscall_handler(ulong sys, Regs* r) {
     if (sys == 0) {
-
         ulong offset;
         char[] message = ke_log_buffer[0 .. r.rdi];
         Memory* range = current.vm.region_for(r.rsi, offset);
