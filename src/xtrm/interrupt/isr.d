@@ -48,8 +48,9 @@ extern(C) void interrupt_handler(Regs* r) {
         return;
     }
     if (r.isr >= 0x100) {
+        ulong sysno = r.isr - 0x100;
 		sched_restore_postirq(r);
-        syscall_handler(r.isr - 0x100, r);
+        syscall_handler(sysno, r);
         r.rip += 2;
         return;
     }
