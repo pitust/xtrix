@@ -44,6 +44,11 @@ void su_register_handle(Regs* r, Obj* o) {
     (*c.handles)[handle] = o;
     r.rax = handle;
 }
+// lifetime(return value): the return value is owned by the current thread at the time of the call
+Obj* su_get_handle(ulong h) {
+    if (h >= 512) return getnull();
+    return (*current.handles)[h];
+}
 
 __gshared char[8192] ke_log_buffer;
 
@@ -74,6 +79,19 @@ void syscall_handler(ulong sys, Regs* r) {
     } else if (sys == 0x16) {
         Chan* chan = alloc!Chan;
         su_register_handle(r, &chan.obj);
+    } else if (sys == 0x1b) {
+        Obj* chan = su_get_handle(r.rdi);
+        Obj* data = su_get_handle(r.rsi);
+
+        if (chan.type != ObjType.chan) {
+            printk("[user] warn: etype while handling KePushMessage: not a channel!");
+            r.rax = cast(ulong)(error.ETYPE);
+            return;
+        }
+        Chan* c = cast(Chan*)chan;
+        c.enqueue(data);
+        r.rax = 0;
+        return;
     } else {
         printk("[user] warn: enosys {x}", sys);
 		r.rax = cast(ulong)(error.ENOSYS);
