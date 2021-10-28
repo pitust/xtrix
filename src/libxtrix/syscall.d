@@ -19,7 +19,8 @@ enum error : long {
 	ETYPE = -1,
 	EACCES = -2,
 	ENOSYS = -3,
-    EAGAIN = -4
+    EAGAIN = -4,
+    EFAULT = -5,
 }
 
 struct XHandle {
@@ -85,8 +86,8 @@ XHandle KeCreateChannel() {
 }
 void KeLog(const char* str, ulong length) {
     asm {
-        mov RDI, length;
-        mov RSI, str;
+        mov RDI, str;
+        mov RSI, length;
         int 0x10;
     }
 }

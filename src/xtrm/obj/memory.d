@@ -53,11 +53,56 @@ struct Memory {
             ulong off = offset + i;
             ulong page = off >> 12;
             ulong pageoff = off & 0xfff;
+            if (page >= pages.length) return;
             values[i] = *cast(ubyte*)virt((*pages)[page] + pageoff);
         }
+    }
+    ref ubyte opIndex(ulong off) {
+        ulong page = off >> 12;
+        ulong pageoff = off & 0xfff;
+        return *cast(ubyte*)virt((*pages)[page] + pageoff);
     }
 
     void write16(ulong offset, ushort value) {
         write(offset, *cast(ubyte[2]*)&value);
+    }
+}
+
+
+
+struct MemRef {
+    Obj obj = Obj(ObjType.memref); alias obj this;
+    ulong size;
+    ulong[32]* pages;
+
+    // lifetime(returned value): returned value is owned by the caller
+    static MemRef* allocate(ulong size) {
+        MemRef* m = alloc!(MemRef)();
+        size = (size + 4095) & ~0xfff;
+        m.size = size;
+        m.pages = alloc!(ulong[32])();
+        foreach (i; 0 .. ((size) >> 12)) {
+            (*m.pages)[i] = phys(cast(ulong) allocate_on_pool(*get_pool("pool/page")));
+        }
+
+        return m;
+    }
+    ref ubyte opIndex(ulong off) {
+        ulong page = off >> 12;
+        ulong pageoff = off & 0xfff;
+        return *cast(ubyte*)virt((*pages)[page] + pageoff);
+    }
+
+    // lifetime(src): src is owned by the caller
+    void copy_from(Memory* src, ulong srcoff) {
+        foreach (i; 0 .. size) {
+            this[i] = (*src)[i];
+        }
+    }
+    // lifetime(dst): dst is owned by the caller
+    void copy_to(Memory* dst, ulong srcoff) {
+        foreach (i; 0 .. size) {
+            (*dst)[i] = this[i];
+        }
     }
 }
