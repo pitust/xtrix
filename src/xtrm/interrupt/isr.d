@@ -26,7 +26,7 @@ extern(C) void interrupt_handler(Regs* r) {
     if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0xf) == 2 && ((r.error) >> 4) >= 0x10) {
         r.isr = (r.error >> 4) + 0xf0;
     }
-    serial_printk("rx irq #{}!", iotuple("x86/irq", r.isr));
+    if (r.isr != LAPIC_DEADLINE_IRQ) serial_printk("rx irq #{}!", iotuple("x86/irq", r.isr));
 	if (r.isr == 0xe) {
 		printk("Got page fault while executing code in ring{}", r.cs & 3);
 		ulong cr2;
