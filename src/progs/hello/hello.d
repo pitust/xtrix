@@ -24,6 +24,7 @@ extern (C) void _start() {
     printf("creating a channel...");
 	XHandle h = KeCreateChannel();
 	if (h.isError) assert(false, "KeCreateChannel failed!");
-		
+	printf("handle: {}", h.getHandle());
+
 	while (true) {}
 }
