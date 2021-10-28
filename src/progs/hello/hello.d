@@ -24,9 +24,12 @@ extern (C) void _start() {
     printf("creating a channel...");
 	XHandle chan = KeCreateChannel();
 	if (chan.isError) assert(false, "KeCreateChannel failed!");
-	printf("handle: {}", chan.getHandle());
+	printf("channel handle: {}", chan.getHandle());
 	XHandle data = KeAllocateMemRefObject("hello, channel world!");
 	if (data.isError) assert(false, "KeAllocateMemRefObject failed!");
+	printf("data handle: {}", data.getHandle());
+	error e = KePushMessage(chan, data);
+	if (e) printf("error pushing message: {}", cast(long)e);
 
 	while (true) {}
 }
