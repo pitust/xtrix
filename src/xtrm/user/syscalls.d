@@ -16,6 +16,9 @@
 module xtrm.user.syscalls;
 
 import xtrm.io;
+import xtrm.memory;
+import xtrm.obj.chan;
+import xtrm.obj.thread;
 import xtrm.obj.memory;
 import xtrm.user.sched;
 import xtrm.interrupt.regs;
@@ -43,6 +46,17 @@ void syscall_handler(ulong sys, Regs* r) {
         range.read(offset, cast(ubyte[])message);
 
         printk("[user] {}", message);
+    } else if (sys == 0x16) {
+        Thread* c = current();
+        long handle = c.allocateHandle();
+        if (handle < 0) {
+            printk("[user] warn: eagain while allocating a handle");
+            r.rax = cast(ulong)(error.EAGAIN);
+            return;
+        }
+        Chan* chan = alloc!Chan;
+        c.handles[handle] = &chan.obj;
+		r.rax = handle;
     } else {
         printk("[user] warn: enosys {x}", sys);
 		r.rax = cast(ulong)(error.ENOSYS);
