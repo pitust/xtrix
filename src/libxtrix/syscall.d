@@ -55,6 +55,26 @@ XHandle long2handle(long l) {
 	return XHandle(cast(ulong)l);
 }
 
+XHandle KeAllocateMemRefObject(const(void)* data, ulong size) {
+	long r;
+	asm {
+		mov RDI, data;
+		mov RSI, size;
+		int 0x1c;
+		mov r, RAX;
+	}
+	return long2handle(r);
+}
+// byte, ubyte and string forms
+XHandle KeAllocateMemRefObject(byte[] data) {
+	return KeAllocateMemRefObject(data.ptr, data.length);
+}
+XHandle KeAllocateMemRefObject(ubyte[] data) {
+	return KeAllocateMemRefObject(data.ptr, data.length);
+}
+XHandle KeAllocateMemRefObject(string data) {
+	return KeAllocateMemRefObject(data.ptr, data.length);
+}
 XHandle KeCreateChannel() {
 	long r;
 	asm {
