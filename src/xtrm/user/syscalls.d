@@ -20,11 +20,11 @@ import xtrm.obj.memory;
 import xtrm.user.sched;
 import xtrm.interrupt.regs;
 
-enum error {
-	type_error,
-	perm_error,
-	lock_error,
-	todo_error
+enum error : long {
+	ETYPE = -1,
+	EACCES = -2,
+	ENOSYS = -3,
+    EAGAIN = -4
 }
 
 __gshared char[8192] ke_log_buffer;
@@ -45,7 +45,7 @@ void syscall_handler(ulong sys, Regs* r) {
         printk("[user] {}", message);
     } else {
         printk("[user] warn: enosys {x}", sys);
-		r.rax = cast(ulong)(-1 - cast(long)error.todo_error);
+		r.rax = cast(ulong)(error.ENOSYS);
 		printk("we set rax to {x}", r.rax);
 	}
 }

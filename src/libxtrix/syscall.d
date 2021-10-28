@@ -15,11 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 module libxtrix.syscall;
 
-enum error {
-	type_error,
-	perm_error,
-	lock_error,
-	todo_error
+enum error : long {
+	ETYPE = -1,
+	EACCES = -2,
+	ENOSYS = -3,
+    EAGAIN = -4
 }
 
 struct XHandle {
