@@ -40,7 +40,14 @@ struct XHandle {
 	bool isError() {
 		return _isError;
 	}
-
+	ulong getHandle() {
+		assert(!isError, "handle XHandle errors correctly!");
+		return _inner;
+	}
+	error getError() {
+		assert(isError, "what? why are you getting an error? no errors here!");
+		return _inner_err;
+	}
 }
 
 XHandle long2handle(long l) {
