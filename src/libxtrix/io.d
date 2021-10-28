@@ -33,6 +33,8 @@ private void putch(char c) {
 void _pvalue(T)(T value) {
 	static if (is(T == ulong)) {
 		sprinti(value, 10, 0, "", "", &putch, "", "", "", "", "");
+	} else static if (is(T == long)) {
+		sprinti(value, 10, 0, "", "", &putch, "", "", "", "", "");
 	} else static if (is(T == int)) {
 		sprinti(value, 10, 0, "", "", &putch, "", "", "", "", "");
 	} else static if (is(T == string)) {
