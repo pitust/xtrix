@@ -16,6 +16,7 @@
 module libxtrix.syscall;
 
 enum error : long {
+	EOK = 0,
 	ETYPE = -1,
 	EACCES = -2,
 	ENOSYS = -3,
@@ -56,6 +57,18 @@ XHandle long2handle(long l) {
 	return XHandle(cast(ulong)l);
 }
 
+error KePushMessage(XHandle chan, XHandle obj) {
+	if (chan.isError || obj.isError) assert(false, "Handle errors before calling KePushMessage!");
+	error e;
+	ulong ch = chan.getHandle(), oh = obj.getHandle();
+	asm {
+		mov RDI, ch;
+		mov RSI, oh;
+		int 0x2b;
+		mov e, RAX;
+	}
+	return e;
+}
 XHandle KeAllocateMemRefObject(const(void)* data, ulong size) {
 	long r;
 	asm {
