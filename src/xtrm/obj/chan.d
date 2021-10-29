@@ -21,7 +21,7 @@ struct Chan {
         messageQueue.next = m;
         messageQueue.msg = msg;
     }
-    // lifetime(returned value): returned value is owned by the caller
+    // lifetime(returned value): returned value is transferred to the caller
     Obj* dequeue() {
         ChanMessage* m = messageQueue;
         if (!m) return null;
