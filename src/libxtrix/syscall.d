@@ -69,6 +69,16 @@ error KePushMessage(XHandle chan, XHandle obj) {
 	}
 	return e;
 }
+XHandle KePopMessage(XHandle chan) {
+	long r;
+	ulong ch = chan.getHandle();
+	asm {
+		mov RDI, ch;
+		int 0x2c;
+		mov r, RAX;
+	}
+	return long2handle(r);
+}
 XHandle KeAllocateMemRefObject(const(void)* data, ulong size) {
 	long r;
 	asm {
