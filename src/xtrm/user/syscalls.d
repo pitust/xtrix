@@ -92,6 +92,20 @@ void syscall_handler(ulong sys, Regs* r) {
         c.enqueue(data);
         r.rax = 0;
         return;
+    } else if (sys == 0x1c) {
+        Obj* chan = su_get_handle(r.rdi);
+
+        if (chan.type != ObjType.chan) {
+            printk("[user] warn: etype while handling KePopMessage: not a channel!");
+            r.rax = cast(ulong)(error.ETYPE);
+            return;
+        }
+        Chan* c = cast(Chan*)chan;
+        if (!c.peek()) {
+            assert(false, "TODO: delaying on a pop");
+        }
+        su_register_handle(r, c.dequeue());
+        return;
     } else {
         printk("[user] warn: enosys {x}", sys);
 		r.rax = cast(ulong)(error.ENOSYS);
