@@ -24,6 +24,18 @@ enum error : long {
     EFAULT = -5,
 }
 
+enum type {
+    nullobj,
+    mem,
+    memref,
+    vm,
+    thr,
+    chan,
+    cred,
+    credproof,
+    credverity,
+}
+
 struct XHandle {
 	private bool _isError;
 	private ulong _inner;
@@ -50,6 +62,9 @@ struct XHandle {
 		assert(isError, "what? why are you getting an error? no errors here!");
 		return _inner_err;
 	}
+	type getType() {
+		return KeGetType(this);
+	}
 }
 
 XHandle long2handle(long l) {
@@ -57,6 +72,16 @@ XHandle long2handle(long l) {
 	return XHandle(cast(ulong)l);
 }
 
+type KeGetType(XHandle handle) {
+	ulong xh = handle.getHandle();
+	type ty;
+	asm {
+		mov RDI, xh;
+		int 0x24;
+		mov ty, RAX;
+	}
+	return ty;
+}
 error KePushMessage(XHandle chan, XHandle obj) {
 	if (chan.isError || obj.isError) assert(false, "Handle errors before calling KePushMessage!");
 	error e;
