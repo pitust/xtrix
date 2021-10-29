@@ -41,6 +41,18 @@ void _pvalue(T)(T value) {
 		foreach (chr; value) putch(chr);
 	} else static if (is(T : immutable(char)*) || is(T : char*)) {
 		while (*value) putch(*value++);
+	} else static if (is(T == type)) {
+		if(false) {}
+		else if (value == type.nullobj) _pvalue("type::nullobj");
+		else if (value == type.mem) _pvalue("type::mem");
+		else if (value == type.memref) _pvalue("type::memref");
+		else if (value == type.vm) _pvalue("type::vm");
+		else if (value == type.thr) _pvalue("type::thr");
+		else if (value == type.chan) _pvalue("type::chan");
+		else if (value == type.cred) _pvalue("type::cred");
+		else if (value == type.credproof) _pvalue("type::credproof");
+		else if (value == type.credverity) _pvalue("type::credverity");
+		else _pvalue("type::<unknown>");
 	} else {
 		static assert(false, "todo print of type " ~ T.stringof);
 	}
