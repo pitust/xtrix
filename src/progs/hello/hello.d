@@ -34,6 +34,7 @@ extern (C) void _start() {
 	XHandle msg = KePopMessage(chan);
 	if (msg.isError) printf("error popping message: {}", cast(long)e);
 	printf("popped data handle: {}", msg.getHandle());
+	printf("popped data handle is of type: {}", msg.getType());
 
 	while (true) {}
 }
