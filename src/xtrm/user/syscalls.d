@@ -76,6 +76,10 @@ void syscall_handler(ulong sys, Regs* r) {
         MemRef* mr = MemRef.allocate(r.rsi);
         mr.copy_from(range, offset);
         su_register_handle(r, &mr.obj);
+    } else if (sys == 0x14) {
+        if (r.rdi > 512) r.rax = ObjType.nullobj;
+        else if ((*current.handles)[r.rdi] == null) r.rax = ObjType.nullobj;
+        else r.rax = (*current.handles)[r.rdi].type;
     } else if (sys == 0x16) {
         Chan* chan = alloc!Chan;
         su_register_handle(r, &chan.obj);
