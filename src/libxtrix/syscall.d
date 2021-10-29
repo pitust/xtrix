@@ -94,6 +94,16 @@ error KePushMessage(XHandle chan, XHandle obj) {
 	}
 	return e;
 }
+ulong KeGetMemObjectSize(XHandle memhandle) {
+	ulong mh = memhandle.getHandle();
+	ulong size;
+	asm {
+		mov RDI, mh;
+		int 0x1d;
+		mov size, RAX;
+	}
+	return size;
+}
 XHandle KePopMessage(XHandle chan) {
 	long r;
 	ulong ch = chan.getHandle();
