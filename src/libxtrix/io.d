@@ -15,11 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 module libxtrix.io;
 
-import libxtrix.syscall;
+import std.traits;
 import libxtrix.intops;
+import libxtrix.syscall;
 
 private __gshared char[4096] printf_buffer;
 private __gshared ulong printf_buf_offset = 0;
+private __gshared char printmode = ' ';
 
 private void putch(char c) {
 	if (c == '\n') {
@@ -31,14 +33,17 @@ private void putch(char c) {
 }
 
 void _pvalue(T)(T value) {
-	static if (is(T == ulong)) {
-		sprinti(value, 10, 0, "", "", &putch, "", "", "", "", "");
-	} else static if (is(T == long)) {
-		sprinti(value, 10, 0, "", "", &putch, "", "", "", "", "");
-	} else static if (is(T == int)) {
-		sprinti(value, 10, 0, "", "", &putch, "", "", "", "", "");
+	static if (isNumeric!T) {
+		int base;
+		const(char)* prefix;
+		if (printmode == ' ') { base = 10; prefix = ""; }
+		else if (printmode == 'x') { base = 16; prefix = "0x"; }
+		else assertf(false, "Unknown print mode {}", printmode);
+		sprinti(value, base, 0, "", prefix, &putch, "", "", "", "", "");
 	} else static if (is(T == string)) {
 		foreach (chr; value) putch(chr);
+	} else static if (is(T == char)) {
+		putch(value);
 	} else static if (is(T : immutable(char)*) || is(T : char*)) {
 		while (*value) putch(*value++);
 	} else static if (is(T == type)) {
@@ -63,9 +68,15 @@ void printf(Args...)(string fmt, Args argz) {
 	static foreach (arg; argz) {{
 		while (true) {
 			if (fmt[off] == '{' && fmt[off + 1] == '}') break;
+			if (fmt[off] == '{' && fmt[off + 2] == '}') break;
 			putch(fmt[off++]);
 		}
 		off += 2;
+		printmode = ' ';
+		if (fmt[off - 1] != '}') {
+			off += 1;
+			printmode = fmt[off - 2];
+		}
 		_pvalue(arg);
 	}}
 
