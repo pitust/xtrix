@@ -72,3 +72,19 @@ void printf(Args...)(string fmt, Args argz) {
 	while (off < fmt.length) putch(fmt[off++]);
 	putch('\n');
 }
+void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(AssertT at, string fmt, Args argz) {
+	if (at) return;
+	ulong off = 0;
+	_pvalue("Assertion failed: '");
+	static foreach (arg; argz) {{
+		while (true) {
+			if (fmt[off] == '{' && fmt[off + 1] == '}') break;
+			putch(fmt[off++]);
+		}
+		off += 2;
+		_pvalue(arg);
+	}}
+
+	while (off < fmt.length) putch(fmt[off++]);
+	printf("' at {}:{}", file, line);
+}
