@@ -76,6 +76,19 @@ void syscall_handler(ulong sys, Regs* r) {
         MemRef* mr = MemRef.allocate(r.rsi);
         mr.copy_from(range, offset);
         su_register_handle(r, &mr.obj);
+    } else if (sys == 0x0d) {
+        Obj* h = su_get_handle(r.rdi);
+        r.rax = 0;
+        if (h.type == ObjType.mem) {
+            r.rax = (cast(Memory*)h).pgCount << 12;
+        }
+        if (h.type == ObjType.memref) {
+            r.rax = (cast(MemRef*)h).size;
+        }
+        if (r.rax == 0) {
+            printk("[user] warn: etype while handling KeGetMemObjectSize!");
+            r.rax = -error.ETYPE;
+        }
     } else if (sys == 0x14) {
         if (r.rdi > 512) r.rax = ObjType.nullobj;
         else if ((*current.handles)[r.rdi] == null) r.rax = ObjType.nullobj;
