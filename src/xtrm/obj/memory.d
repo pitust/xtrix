@@ -78,8 +78,8 @@ struct MemRef {
     // lifetime(returned value): returned value is owned by the caller
     static MemRef* allocate(ulong size) {
         MemRef* m = alloc!(MemRef)();
-        size = (size + 4095) & ~0xfff;
         m.size = size;
+        size = (size + 4095) & ~0xfff;
         m.pages = alloc!(ulong[32])();
         foreach (i; 0 .. ((size) >> 12)) {
             (*m.pages)[i] = phys(cast(ulong) allocate_on_pool(*get_pool("pool/page")));
