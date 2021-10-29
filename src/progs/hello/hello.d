@@ -31,5 +31,8 @@ extern (C) void _start() {
 	error e = KePushMessage(chan, data);
 	if (e) printf("error pushing message: {}", cast(long)e);
 
+	XHandle msg = KePopMessage(chan);
+	if (msg.isError) printf("error popping message: {}", cast(long)e);
+
 	while (true) {}
 }
