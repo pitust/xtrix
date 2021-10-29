@@ -36,6 +36,9 @@ extern (C) void _start() {
 	printf("popped data handle: {}", msg.getHandle());
 	if (msg.getType() != type.memref)
 		assertf(false, "popped data handle is of type {}, expected type::memref", msg.getType());
+	
+	ulong msg_size = KeGetMemObjectSize(msg);
+	printf("message has {x} bytes, malloc it!", msg_size);
 
 	while (true) {}
 }
