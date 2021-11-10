@@ -16,6 +16,7 @@
 module xtrm.user.syscalls;
 
 import xtrm.io;
+import xtrm.rng;
 import xtrm.memory;
 import xtrm.obj.obj;
 import xtrm.obj.chan;
@@ -65,6 +66,11 @@ void syscall_handler(ulong sys, Regs* r) {
         range.read(offset, cast(ubyte[])message);
 
         printk("[user] {}", message);
+    } else if (sys == 0x03) {
+        ulong offset = 0;
+        do {
+            r.rax = random_aslr();
+        } while (current.vm.region_for(r.rax, offset));
     } else if (sys == 0x0c) {
         ulong offset;
         Memory* range = current.vm.region_for(r.rdi, offset);
