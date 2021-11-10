@@ -34,12 +34,13 @@ private void putch(char c) {
 
 void _pvalue(T)(T value) {
 	static if (isNumeric!T) {
-		int base;
+		int base, pad = 0;
 		const(char)* prefix;
 		if (printmode == ' ') { base = 10; prefix = ""; }
 		else if (printmode == 'x') { base = 16; prefix = "0x"; }
+		else if (printmode == '*') { base = 16; prefix = "0x"; pad = 16; }
 		else assertf(false, "Unknown print mode {}", printmode);
-		sprinti(value, base, 0, "", prefix, &putch, "", "", "", "", "");
+		sprinti(value, base, pad, "0", prefix, &putch, "", "", "", "", "");
 	} else static if (is(T == string)) {
 		foreach (chr; value) putch(chr);
 	} else static if (is(T == char)) {
@@ -98,4 +99,5 @@ void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(Asse
 
 	while (off < fmt.length) putch(fmt[off++]);
 	printf("' at {}:{}", file, line);
+	while (1) {}
 }
