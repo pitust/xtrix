@@ -152,3 +152,11 @@ void KeLog(const char* str, ulong length) {
 void KeLog(string str) {
 	KeLog(str.ptr, str.length);
 }
+ulong KeASLRAddress() {
+	ulong res;
+    asm {
+        int 0x13;
+		mov res, RAX;
+    }
+	return res;
+}
