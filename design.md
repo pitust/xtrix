@@ -5,27 +5,29 @@
  - minimal syscall set:
      - (0) KeLog(len, str*)
      - manipulating VMs
-         - (1) KeCreateVM() -> vm
-         - (2) KeAssignVM(thr, vm)
-         - (3) KeCreateVMFromELF(memref, entry* | nil) -> vm
-         - (4) KeGetVMFromThread(thr) -> vm
-         - (5) KeASLRAddress(vm) -> `addr` such that KeGetMemoryObjectByAddress(vm, addr, nil) is nullobj
+         - (01) KeCreateVM() -> vm
+         - (02) KeLoadELF(vm, memref, entry* | nil)
+         - (03) KeASLRAddress() -> `addr` which is free in the current process
      - manipulating threads
-         - (6) KeCreateThread(vm, rip, rdi, rsi, rdx, rsp) -> thr
-         - (7) KeChangeThreadStopCounter(thr, delta) -> thr.counter += delta, thr. counter
-         - (8) KeSendSignal(sig, rsi)
-         - (9) KeCreateSignal(thr, rip, rdi) -> sig
-         - (a) KeGetSelfThread() -> thr
+         - (04) KeReadRegs(thr) -> regs
+         - (05) KeWriteRegs(thr, regs)
+         - (06) KeCreateThread(vm, rip, rdi, rsi, rdx, rsp) -> thr
+         - (07) KeChangeThreadStopCounter(thr, delta) -> thr.counter += delta, thr.counter
+         - (08) KeSendSignal(sig, rsi)
+         - (09) KeCreateSignal(thr, rip, rdi) -> sig
+         - (0a) KeGetSelfThread() -> thr
      - memory objects
-         - (b) KeAllocateMemoryObject(size) -> mem
-         - (c) KeAllocateMemRefObject(addr, size) -> memref
-         - (d) KeGetMemObjectSize(mem | memref) -> int
-         - (e) KeReadMemRefObject(memref, addr)
-         - (f) KeAddMemoryObjectToVM(vm, mem, addr)
+         - (0b) KeAllocateMemoryObject(size) -> mem
+         - (0c) KeAllocateMemRefObject(addr, size) -> memref
+         - (0d) KeGetMemObjectSize(mem | memref) -> int
+         - (0e) KeReadMemory(mem | memref, addr, outaddr)
+         - (0f) KeWriteMemory(mem, addr, outaddr)
+         - (23) KeMapMemory(vm, mem, addr)
+         - (24) KeUnmapMemory(vm, mem)
          - (10) KeGetMemoryObjectByAddress(vm, addr, size* | nil) -> mem | nullobj
      - objects
          - (11) KeCloneObject(obj) -> obj
-         - (12) KeDeleteObject(handle[obj])
+         - (12) KeDeleteObject(handle<obj>)
          - (13) KeRefCount(obj) -> int
          - (14) KeGetType(obj) -> objtype
          - (15) KeIsNull(obj) -> `bool` true if KeGetType(obj) is nullobj, else false
