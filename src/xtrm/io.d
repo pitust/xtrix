@@ -16,6 +16,7 @@
 module xtrm.io;
 
 import xtrm.atoi;
+import xtrm.stivale;
 
 private uint rgb(ubyte r, ubyte g, ubyte b) {
     return ((cast(uint)r) << 16) | ((cast(uint)g) << 8) | ((cast(uint)b) << 0);
@@ -57,12 +58,11 @@ extern(C) int ssfnc_putc(uint chr);
 
 __gshared bool fonts_init = false;
 __gshared bool serial_printk_ctx = false;
-void io_fonts_initialized() {
+void io_fonts_initialized(StivaleStruct* struc) {
     fonts_init = true;
-    ushort _bs, fb_w, fb_h, fb_p;
-    void* lfb;
-    ssfnc_do_getstats(&_bs, &_bs, &fb_w, &fb_h, &fb_p, &lfb);
-
+    ushort fb_w = struc.framebuffer_width, fb_h = struc.framebuffer_height, fb_p = struc.framebuffer_pitch;
+    void* lfb = cast(void*)struc.framebuffer_addr;
+    
     version (SmoothStart) {
         foreach (y; 0..fb_h) {
             foreach (x; 0..fb_w) {

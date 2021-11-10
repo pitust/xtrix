@@ -16,6 +16,7 @@
 module xtrm.kernel;
 
 import xtrm.io;
+import xtrm.rng;
 import xtrm.util;
 import xtrm.util;
 import xtrm.memory;
@@ -32,6 +33,9 @@ import xtrm.interrupt.regs;
 import xtrm.interrupt.idt;
 import xtrm.interrupt.lapic;
 
+enum BORDER = 12;
+enum BORDERx2 = BORDER * 2;
+enum BORDERx4 = BORDER * 4;
 
 uint rgb(ubyte r, ubyte b, ubyte g) {
     return ((cast(uint)r) << 16) | ((cast(uint)g) << 8) | ((cast(uint)b) << 0);
@@ -41,6 +45,9 @@ void init_mman(StivaleStruct* struc) {
     E820Entry[] t = ArrayRepr!(E820Entry).from(struc.memory_map_addr, struc.memory_map_entries).into();
     ulong mem = 0;
     foreach (E820Entry e; t) {
+        random_mixseed(cast(ulong)e.base + e.type);
+        random_mixseed(cast(ulong)e.length + e.type);
+        random_mixseed(cast(ulong)e.base + e.length);
         if (e.type == 1) {
             mem += e.length;
             foreach (iter; 0..(e.length >> 12)) {
@@ -52,6 +59,7 @@ void init_mman(StivaleStruct* struc) {
 
 extern (C) void kmain(StivaleStruct* struc) {
     init_low_half();
+    random_mixseed(struc.epoch);
 
     StivaleModule* init = null;
 
@@ -62,11 +70,21 @@ extern (C) void kmain(StivaleStruct* struc) {
         if (mod.name[0] == 0) {
             assert(false, "No anonymous modules pls");
         }
+        random_mixseed(cast(ulong)mod.name.ptr);
+        random_mixseed(cast(ulong)mod.begin);
+        random_mixseed(cast(ulong)mod.end);
         if (strisequal(mod.name.ptr, "font")) {
-            ssfnc_do_init(mod.begin, struc.framebuffer_addr, struc.framebuffer_width, struc.framebuffer_height, struc
-                    .framebuffer_pitch);
+            ssfnc_do_init(mod.begin,
+                struc.framebuffer_addr + struc.framebuffer_pitch * BORDER + BORDERx4,
+                struc.framebuffer_width - BORDERx2,
+                struc.framebuffer_height - BORDERx2,
+                struc.framebuffer_pitch
+            );
+            random_mixseed(cast(ulong)struc.framebuffer_addr);
+            random_mixseed(struc.framebuffer_width + struc.framebuffer_pitch);
+            random_mixseed(struc.framebuffer_height);
             
-            io_fonts_initialized();
+            io_fonts_initialized(struc);
             printk("Welcome to \x1b[r]xtrix!\x1b[w_0]  Copyright (C) 2021  pitust");
             printk("This program comes with ABSOLUTELY NO WARRANTY; for details type `ktool --gpl w'.");
             printk("This is free software, and you are welcome to redistribute it");
