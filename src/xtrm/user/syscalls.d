@@ -18,6 +18,7 @@ module xtrm.user.syscalls;
 import xtrm.io;
 import xtrm.rng;
 import xtrm.memory;
+import xtrm.cpu.cr3;
 import xtrm.obj.obj;
 import xtrm.obj.chan;
 import xtrm.obj.thread;
@@ -71,6 +72,10 @@ void syscall_handler(ulong sys, Regs* r) {
         do {
             r.rax = random_aslr();
         } while (current.vm.region_for(r.rax, offset));
+    } else if (sys == 0x0b) {
+        ulong offset;
+        Memory* mr = Memory.allocate(r.rdi);
+        su_register_handle(r, &mr.obj);
     } else if (sys == 0x0c) {
         ulong offset;
         Memory* range = current.vm.region_for(r.rdi, offset);
@@ -128,6 +133,19 @@ void syscall_handler(ulong sys, Regs* r) {
             assert(false, "TODO: delaying on a pop");
         }
         su_register_handle(r, c.dequeue());
+        return;
+    } else if (sys == 0x25) {
+        Obj* mem = su_get_handle(r.rdi);
+
+        if (mem.type != ObjType.mem) {
+            printk("[user] warn: etype while handling KeMapMemory/2: not a memory object!");
+            r.rax = cast(ulong)(error.ETYPE);
+            return;
+        }
+        Memory* m = cast(Memory*)mem;
+        current.vm.map(r.rsi, m);
+        copy_to_cr3(current.vm.lowhalf);
+        r.rax = 0;
         return;
     } else {
         printk("[user] warn: enosys {x}", sys);
