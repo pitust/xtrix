@@ -68,8 +68,6 @@ struct Memory {
     }
 }
 
-
-
 struct MemRef {
     Obj obj = Obj(ObjType.memref); alias obj this;
     ulong size;
@@ -96,13 +94,13 @@ struct MemRef {
     // lifetime(src): src is owned by the caller
     void copy_from(Memory* src, ulong srcoff) {
         foreach (i; 0 .. size) {
-            this[i] = (*src)[i];
+            this[i] = (*src)[i + srcoff];
         }
     }
     // lifetime(dst): dst is owned by the caller
-    void copy_to(Memory* dst, ulong srcoff) {
+    void copy_to(Memory* dst, ulong dstoff) {
         foreach (i; 0 .. size) {
-            (*dst)[i] = this[i];
+            (*dst)[i + dstoff] = this[i];
         }
     }
 }
