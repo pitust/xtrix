@@ -20,10 +20,12 @@
          - (0b) KeAllocateMemoryObject(size) -> mem
          - (0c) KeAllocateMemRefObject(addr, size) -> memref
          - (0d) KeGetMemObjectSize(mem | memref) -> int
-         - (0e) KeReadMemory(mem | memref, addr, outaddr)
-         - (0f) KeWriteMemory(mem, addr, outaddr)
+         - (0e) KeReadMemory(mem | memref, addr, count, outaddr)
+         - (0f) KeWriteMemory(mem, addr, count, outaddr)
          - (23) KeMapMemory(vm, mem, addr)
          - (24) KeUnmapMemory(vm, mem)
+         - (25) (alt) KeMapMemory(mem, addr)
+         - (26) (alt) KeUnmapMemory(mem)
          - (10) KeGetMemoryObjectByAddress(vm, addr, size* | nil) -> mem | nullobj
      - objects
          - (11) KeCloneObject(obj) -> obj

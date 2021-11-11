@@ -32,6 +32,7 @@ enum error : long {
 	ENOSYS = -3,
     EAGAIN = -4,
     EFAULT = -5,
+    EINVAL = -6,
 }
 
 // lifetime(o): o is owned by the callee and lives for as long as the current thread object.
@@ -133,6 +134,34 @@ void syscall_handler(ulong sys, Regs* r) {
             assert(false, "TODO: delaying on a pop");
         }
         su_register_handle(r, c.dequeue());
+        return;
+    } else if (sys == 0x0e) {
+        Obj* obj = su_get_handle(r.rdi);
+
+        if (obj.type != ObjType.mem && obj.type != ObjType.memref) {
+            printk("[user] warn: etype while handling KeReadMemory: not a mem/memref!");
+            r.rax = cast(ulong)(error.ETYPE);
+            return;
+        }
+        r.rax = cast(ulong)(error.ENOSYS);
+        if (obj.type == ObjType.memref) {
+            // addr, count, outaddr
+            MemRef* memref = cast(MemRef*)obj;
+            if (r.rsi != 0) {
+                printk("[user] warn: einval while handling KeReadMemory: memrefs cannot be read at offset!");
+                r.rax = cast(ulong)(error.ETYPE);
+                return;
+            }
+            if (r.rdx != memref.size) {
+                printk("[user] warn: einval while handling KeReadMemory: memrefs cannot be read partially!");
+                r.rax = cast(ulong)(error.ETYPE);
+                return;
+            }
+            ulong offset;
+            Memory* region = current.vm.region_for(r.rcx, offset);
+            memref.copy_to(region, offset);
+            r.rax = 0;
+        }
         return;
     } else if (sys == 0x25) {
         Obj* mem = su_get_handle(r.rdi);
