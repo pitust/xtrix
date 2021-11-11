@@ -22,6 +22,7 @@ enum error : long {
 	ENOSYS = -3,
     EAGAIN = -4,
     EFAULT = -5,
+    EINVAL = -6,
 }
 
 enum type {
@@ -37,32 +38,34 @@ enum type {
 }
 
 struct XHandle {
-	private bool _isError;
-	private ulong _inner;
-	private error _inner_err;
+	private ulong value;
+	private error err;
 	
 	@disable this();
 	this(ulong handleValue) {
-		_inner = handleValue;
-		_isError = false;
+		value = handleValue;
+		err = error.EOK;
 	}
 	this(error handleValue) {
-		_inner_err = handleValue;
-		_isError = true;
+		err = handleValue;
+		assert(err != error.EOK);
 	}
 
 	bool isError() {
-		return _isError;
+		return err != error.EOK;
 	}
 	ulong getHandle() {
 		assert(!isError, "handle XHandle errors correctly!");
-		return _inner;
+		return value;
 	}
 	error getError() {
 		assert(isError, "what? why are you getting an error? no errors here!");
-		return _inner_err;
+		return err;
 	}
 	type getType() {
+		return KeGetType(this);
+	}
+	type type_of() {
 		return KeGetType(this);
 	}
 }
@@ -123,6 +126,41 @@ XHandle KeAllocateMemRefObject(const(void)* data, ulong size) {
 		mov r, RAX;
 	}
 	return long2handle(r);
+}
+XHandle KeAllocateMemoryObject(ulong size) {
+	long r;
+	asm {
+		mov RDI, size;
+		int 0x1b;
+		mov r, RAX;
+	}
+	return long2handle(r);
+}
+error KeReadMemory(XHandle obj, ulong addr, ulong count, void* outaddr) {
+	error r;
+	if (obj.isError) assert(false, "Cannot map an error into memory dumbo");
+	ulong hvalue = obj.getHandle();
+	asm {
+		mov RDI, hvalue;
+		mov RSI, addr;
+		mov RDX, count;
+		mov RCX, outaddr;
+		int 0x1e;
+		mov r, RAX;
+	}
+	return r;
+}
+error KeMapMemory(XHandle h, ulong addr) {
+	error r;
+	if (h.isError) assert(false, "Cannot map an error into memory dumbo");
+	ulong hvalue = h.getHandle();
+	asm {
+		mov RDI, hvalue;
+		mov RSI, addr;
+		int 0x35;
+		mov r, RAX;
+	}
+	return r;
 }
 // byte, ubyte and string forms
 XHandle KeAllocateMemRefObject(byte[] data) {
