@@ -18,27 +18,32 @@ module progs.hello.hello;
 
 import libxtrix.io;
 import libxtrix.syscall;
+import libxtrix.libc.malloc;
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
 extern (C) void _start() {
-    printf("creating a channel...");
 	XHandle chan = KeCreateChannel();
 	if (chan.isError) assert(false, "KeCreateChannel failed!");
-	printf("channel handle: {}", chan.getHandle());
-	XHandle data = KeAllocateMemRefObject("hello, channel world!");
-	if (data.isError) assert(false, "KeAllocateMemRefObject failed!");
-	printf("data handle: {}", data.getHandle());
-	error e = KePushMessage(chan, data);
-	if (e) printf("error pushing message: {}", cast(long)e);
+	{
+		string msg = "hello, channel world!";
+		XHandle data_out = KeAllocateMemRefObject(msg);
+		if (data_out.isError) assert(false, "KeAllocateMemRefObject failed!");
+		error e = KePushMessage(chan, data_out);
+		if (e) printf("error pushing message: {}", cast(long)e);
+		printf("sent message: {}", msg);
+	}
 
-	XHandle msg = KePopMessage(chan);
-	if (msg.isError) printf("error popping message: {}", cast(long)e);
-	printf("popped data handle: {}", msg.getHandle());
-	if (msg.getType() != type.memref)
-		assertf(false, "popped data handle is of type {}, expected type::memref", msg.getType());
-	
-	ulong msg_size = KeGetMemObjectSize(msg);
-	printf("message has {x} bytes, malloc it!", msg_size);
+	{
+		XHandle msg = KePopMessage(chan);
+		if (msg.isError) printf("error popping message: {}", msg.getError);
+		if (msg.getType() != type.memref)
+			assertf(false, "popped data handle is of type {}, expected type::memref", msg.getType());
+		
+		ulong msg_size = KeGetMemObjectSize(msg);
+		char* data_in = cast(char*)malloc(msg_size + 1);
+		KeReadMemory(msg, 0, msg_size, data_in);
+		printf("recieved message: {}", data_in);
+	}
 
 	while (true) {}
 }
