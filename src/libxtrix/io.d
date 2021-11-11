@@ -39,6 +39,7 @@ void _pvalue(T)(T value) {
 		if (printmode == ' ') { base = 10; prefix = ""; }
 		else if (printmode == 'x') { base = 16; prefix = "0x"; }
 		else if (printmode == '*') { base = 16; prefix = "0x"; pad = 16; }
+		else if (printmode == 'p') { base = 16; prefix = "0x"; pad = 16; }
 		else assertf(false, "Unknown print mode {}", printmode);
 		sprinti(value, base, pad, "0", prefix, &putch, "", "", "", "", "");
 	} else static if (is(T == string)) {
