@@ -32,6 +32,7 @@ extern (C) void _start(ulong phy_stivale2_structure) {
     StivaleStruct s;
     assert_success(KeReadPhysicalMemory(phy_stivale2_structure, StivaleStruct.sizeof, &s));
     phy modp = s.modules;
+    printf("mods: {*}", s.module_count);
     foreach (i; 0..s.module_count) {
         StivaleModule mod;
         assert_success(KeReadPhysicalMemory(cast(ulong)modp, StivaleModule.sizeof, &mod));
