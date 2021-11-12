@@ -21,7 +21,7 @@ import libxtrix.syscall;
 import libxtrix.libc.malloc;
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
-extern (C) void _start() {
+extern (C) void _start(ulong phy_stivale2_structure) {
 	XHandle chan = KeCreateChannel();
 	if (chan.isError) assert(false, "KeCreateChannel failed!");
 	{
