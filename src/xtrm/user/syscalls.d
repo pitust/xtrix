@@ -17,6 +17,7 @@ module xtrm.user.syscalls;
 
 import xtrm.io;
 import xtrm.rng;
+import xtrm.util;
 import xtrm.memory;
 import xtrm.cpu.cr3;
 import xtrm.obj.obj;
@@ -78,15 +79,8 @@ void syscall_handler(ulong sys, Regs* r) {
         Memory* mr = Memory.allocate(r.rdi);
         su_register_handle(r, &mr.obj);
     } else if (sys == 0x0c) {
-        ulong offset;
-        Memory* range = current.vm.region_for(r.rdi, offset);
-        if (range == null) {
-            printk("[user] warn: efault while handling KeAllocateMemRefObject!");
-            r.rax = cast(ulong)(error.EFAULT);
-            return;
-        }
         MemRef* mr = MemRef.allocate(r.rsi);
-        mr.copy_from(range, offset);
+        mr.copy_from_user_address(r.rdi);
         su_register_handle(r, &mr.obj);
     } else if (sys == 0x0d) {
         Obj* h = su_get_handle(r.rdi);
@@ -157,9 +151,7 @@ void syscall_handler(ulong sys, Regs* r) {
                 r.rax = cast(ulong)(error.ETYPE);
                 return;
             }
-            ulong offset;
-            Memory* region = current.vm.region_for(r.rcx, offset);
-            memref.copy_to(region, offset);
+            memref.copy_to_user_address(r.rdi);
             r.rax = 0;
         }
         return;
@@ -176,6 +168,9 @@ void syscall_handler(ulong sys, Regs* r) {
         copy_to_cr3(current.vm.lowhalf);
         r.rax = 0;
         return;
+    } else if (sys == 0x29) {
+        current.vm.copy_into(r.rdx, cast(void*)virt(r.rdi), r.rsi);
+        r.rax = 0;
     } else {
         printk("[user] warn: enosys {x}", sys);
 		r.rax = cast(ulong)(error.ENOSYS);
