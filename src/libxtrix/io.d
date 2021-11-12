@@ -24,6 +24,7 @@ private __gshared ulong printf_buf_offset = 0;
 private __gshared char printmode = ' ';
 
 private void putch(char c) {
+	if (c == 0) return;
 	if (c == '\n') {
 		KeLog(printf_buffer.ptr, printf_buf_offset);
 		printf_buf_offset = 0;
