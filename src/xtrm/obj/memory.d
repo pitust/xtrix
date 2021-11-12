@@ -19,6 +19,7 @@ import xtrm.io;
 import xtrm.util;
 import xtrm.memory;
 import xtrm.obj.obj;
+import xtrm.obj.vm;
 
 struct Memory {
     Obj obj = Obj(ObjType.mem); alias obj this;
@@ -71,6 +72,7 @@ struct Memory {
 struct MemRef {
     Obj obj = Obj(ObjType.memref); alias obj this;
     ulong size;
+    ulong pagecnt;
     ulong[32]* pages;
 
     // lifetime(returned value): returned value is owned by the caller
@@ -78,6 +80,7 @@ struct MemRef {
         MemRef* m = alloc!(MemRef)();
         m.size = size;
         size = (size + 4095) & ~0xfff;
+        m.pagecnt = size >> 12;
         m.pages = alloc!(ulong[32])();
         foreach (i; 0 .. ((size) >> 12)) {
             (*m.pages)[i] = phys(cast(ulong) allocate_on_pool(*get_pool("pool/page")));
@@ -91,16 +94,34 @@ struct MemRef {
         return *cast(ubyte*)virt((*pages)[page] + pageoff);
     }
 
-    // lifetime(src): src is owned by the caller
-    void copy_from(Memory* src, ulong srcoff) {
-        foreach (i; 0 .. size) {
-            this[i] = (*src)[i + srcoff];
+    void copy_to_user_address(ulong va) {
+        foreach (p; 0 .. pagecnt) {
+            ulong data = (*pages)[p];
+            ulong cnt = 4096;
+            if (p == pagecnt - 1) cnt = size & 0xfff;
+            isDoingUserCopy = true;
+            asm {
+                mov RDI, va;
+                mov RSI, data;
+                mov RCX, cnt;
+                rep; movsb;
+            }
+            isDoingUserCopy = false;
         }
     }
-    // lifetime(dst): dst is owned by the caller
-    void copy_to(Memory* dst, ulong dstoff) {
-        foreach (i; 0 .. size) {
-            (*dst)[i + dstoff] = this[i];
+    void copy_from_user_address(ulong va) {
+        foreach (p; 0 .. pagecnt) {
+            ulong data = (*pages)[p];
+            ulong cnt = 4096;
+            if (p == pagecnt - 1) cnt = size & 0xfff;
+            isDoingUserCopy = true;
+            asm {
+                mov RSI, va;
+                mov RDI, data;
+                mov RCX, cnt;
+                rep; movsb;
+            }
+            isDoingUserCopy = false;
         }
     }
 }
