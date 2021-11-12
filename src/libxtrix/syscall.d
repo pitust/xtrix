@@ -22,7 +22,7 @@ enum error : long {
 	ENOSYS = -3,
     EAGAIN = -4,
     EFAULT = -5,
-    EINVAL = -6,
+    EINVAL = -6
 }
 
 enum type {
@@ -197,4 +197,15 @@ ulong KeASLRAddress() {
 		mov res, RAX;
     }
 	return res;
+}
+error KeReadPhysicalMemory(ulong addr, ulong size, void* outaddr) {
+	error r;
+	asm {
+		mov RDI, addr;
+		mov RSI, size;
+		mov RDX, outaddr;
+		int 0x39;
+		mov r, RAX;
+	}
+	return r;
 }
