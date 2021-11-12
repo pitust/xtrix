@@ -26,6 +26,10 @@
          - (24) KeUnmapMemory(vm, mem)
          - (25) (alt) KeMapMemory(mem, addr)
          - (26) (alt) KeUnmapMemory(mem)
+         - (27) KeCreateMemoryForPhys(addr, size) -> mem
+         - (28) KeReadPhysicalMemory(addr, size) -> memref
+         - (29) (alt) KeReadPhysicalMemory(addr, size, outaddr)
+         - (2a) KeLookupPhysicalAddress(mem, page) -> phys
          - (10) KeGetMemoryObjectByAddress(vm, addr, size* | nil) -> mem | nullobj
      - objects
          - (11) KeCloneObject(obj) -> obj
@@ -35,7 +39,7 @@
          - (15) KeIsNull(obj) -> `bool` true if KeGetType(obj) is nullobj, else false
      - channels
          - (16) KeCreateChannel() -> chan
-         - (17) KeCreateNamedChannel(name) -> chan
+         - (17) KeCreateKeyedChannel(key) -> chan
          - (18) KeDestroyChannel(chan)
          - (19) KeGetChannelByName(name) -> chan
          - (1a) KeMakeInfiniteChannel(chan, isinfinite)
