@@ -18,8 +18,13 @@ module xtrm.obj.vm;
 import xtrm.io;
 import xtrm.util;
 import xtrm.memory;
+import xtrm.support;
 import xtrm.obj.obj;
+import xtrm.cpu.cr3;
 import xtrm.obj.memory;
+import xtrm.user.sched;
+
+__gshared bool isDoingUserCopy = false;
 
 struct VMEntry {
     ulong addr; Memory* mem;
@@ -78,5 +83,29 @@ struct VM {
             }
         }
         return null;
+    }
+    void copy_into(ulong va, void* data, ulong count) {
+        copy_from_cr3(current.vm.lowhalf);
+        copy_to_cr3(lowhalf);
+        isDoingUserCopy = true;
+        asm {
+            mov RSI, data;
+            mov RDI, va;
+            mov RCX, count;
+            rep; movsb;
+        }
+        isDoingUserCopy = false;
+    }
+    void copy_out_of(ulong va, void* data, ulong count) {
+        copy_from_cr3(current.vm.lowhalf);
+        copy_to_cr3(lowhalf);
+        isDoingUserCopy = true;
+        asm {
+            mov RSI, va;
+            mov RDI, data;
+            mov RCX, count;
+            rep; movsb;
+        }
+        isDoingUserCopy = false;
     }
 }
