@@ -32,8 +32,16 @@ private void putch(char c) {
 	}
 }
 
+private template uq(T) {
+	static if (is(T U == const(U)[])) {
+		alias uq = U[];
+	} else static if (is(T U == immutable(U)[])) {
+		alias uq = U[];
+	} else alias uq = T;
+}
+
 void _pvalue(T)(T value) {
-	static if (isNumeric!T) {
+	static if (isNumeric!(T) && !is(T U == enum)) {
 		int base, pad = 0;
 		const(char)* prefix;
 		if (printmode == ' ') { base = 10; prefix = ""; }
@@ -48,6 +56,20 @@ void _pvalue(T)(T value) {
 		putch(value);
 	} else static if (is(T : immutable(char)*) || is(T : char*)) {
 		while (*value) putch(*value++);
+	} else static if (is(uq!(T) : char[])) {
+		foreach (chr; value) putch(chr);
+	} else static if (__traits(isStaticArray, T) && is(typeof(uq!(T).init[0]) == char)) {
+		foreach (chr; value) putch(chr);
+	} else static if (is(T == error)) {
+		if(false) {}
+		else if (value == error.EOK) _pvalue("No error");
+		else if (value == error.ETYPE) _pvalue("Inappropriate type or format");
+		else if (value == error.EACCES) _pvalue("Permission denied");
+		else if (value == error.ENOSYS) _pvalue("Function not implemented");
+		else if (value == error.EAGAIN) _pvalue("Resource temporarily unavailable");
+		else if (value == error.EFAULT) _pvalue("Bad address");
+		else if (value == error.EINVAL) _pvalue("Invalid argument");
+		else _pvalue("Unknown error");
 	} else static if (is(T == type)) {
 		if(false) {}
 		else if (value == type.nullobj) _pvalue("type::nullobj");
@@ -101,4 +123,14 @@ void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(Asse
 	while (off < fmt.length) putch(fmt[off++]);
 	printf("' at {}:{}", file, line);
 	while (1) {}
+}
+
+
+void assert_success(string file = __FILE__, uint line = __LINE__)(error e) {
+	if (e != error.EOK) {
+		printf("Unexpected error: {} at {}:{}", e, file, line);
+	}
+}
+void assert_success(string file = __FILE__, uint line = __LINE__)(XHandle h) {
+	if (h.isError()) assert_success!(file, line)(h.getError());
 }
