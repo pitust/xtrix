@@ -39,8 +39,8 @@ extern (C) void _start(ulong phy_stivale2_structure) {
         printf("module: {}", mod.name);
         modp = mod.next;
     }
-    XHandle c1 = KeCreateKeyedChannel(0xed45c6b9c4a45ba3);
-    XHandle c2 = KeCreateKeyedChannel(0xed45c6b9c4a45ba3);
+    XHandle c1 = KeCreateKeyedChannel(0xed45c6b9c4a45ba3).aok();
+    XHandle c2 = KeCreateKeyedChannel(0xed45c6b9c4a45ba3).aok();
     KePushMessage(c1, KeAllocateMemRefObject("loll"));
     XHandle r = KePopMessage(c2);
     printf("m: {}", r.getType());
