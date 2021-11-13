@@ -2,6 +2,7 @@ module progs.init.init;
 
 import libxtrix.io;
 import std.typecons;
+import libxk.hashmap;
 import libxtrix.syscall;
 
 struct phy { ulong base; mixin Proxy!(base); }
@@ -39,11 +40,6 @@ extern (C) void _start(ulong phy_stivale2_structure) {
         printf("module: {}", mod.name);
         modp = mod.next;
     }
-    XHandle c1 = KeCreateKeyedChannel(0xed45c6b9c4a45ba3).aok();
-    XHandle c2 = KeCreateKeyedChannel(0xed45c6b9c4a45ba3).aok();
-    KePushMessage(c1, KeAllocateMemRefObject("loll"));
-    XHandle r = KePopMessage(c2);
-    printf("m: {}", r.getType());
 
 
     while(1) {}
