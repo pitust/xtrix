@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 module libxtrix.syscall;
 
+private extern(C) void __assert(const char* assertion, const char* file, int line);
+
 enum error : long {
 	EOK = 0,
 	ETYPE = -1,
@@ -67,6 +69,10 @@ struct XHandle {
 	}
 	type type_of() {
 		return KeGetType(this);
+	}
+	ref XHandle aok(string file = __FILE__, int line = __LINE__)(string assertion = "Expected valid handle") {
+		if (isError) __assert(assertion.ptr, file.ptr, line);
+		return this;
 	}
 }
 
