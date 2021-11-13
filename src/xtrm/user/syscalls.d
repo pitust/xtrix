@@ -21,6 +21,7 @@ import xtrm.util;
 import xtrm.memory;
 import xtrm.cpu.cr3;
 import xtrm.obj.obj;
+import libxk.hashmap;
 import xtrm.obj.chan;
 import xtrm.obj.thread;
 import xtrm.obj.memory;
@@ -36,7 +37,7 @@ enum error : long {
     EINVAL = -6,
 }
 
-// lifetime(o): o is owned by the callee and lives for as long as the current thread object.
+// lifetime(o): o is owned by the callee and is transferred to the caling thread.
 void su_register_handle(Regs* r, Obj* o) {
     Thread* c = current();
     long handle = c.allocateHandle();
@@ -48,13 +49,14 @@ void su_register_handle(Regs* r, Obj* o) {
     (*c.handles)[handle] = o;
     r.rax = handle;
 }
-// lifetime(return value): the return value is owned by the current thread at the time of the call
+// lifetime(return value): the returned value is owned by the calling thread
 Obj* su_get_handle(ulong h) {
     if (h >= 512) return getnull();
     return (*current.handles)[h];
 }
 
 __gshared char[8192] ke_log_buffer;
+__gshared HashMap!(ulong, Chan*) channels;
 
 void syscall_handler(ulong sys, Regs* r) {
     if (sys == 0) {
@@ -102,6 +104,17 @@ void syscall_handler(ulong sys, Regs* r) {
     } else if (sys == 0x16) {
         Chan* chan = alloc!Chan;
         su_register_handle(r, &chan.obj);
+    } else if (sys == 0x17) {
+        if (r.rdi in channels) {
+            Chan* c = channels[r.rdi];
+            c.rc++;
+            su_register_handle(r, &c.obj);
+        } else {
+            Chan* c = alloc!Chan;
+            c.rc++;
+            channels[r.rdi] = c;
+            su_register_handle(r, &c.obj);
+        }
     } else if (sys == 0x1b) {
         Obj* chan = su_get_handle(r.rdi);
         Obj* data = su_get_handle(r.rsi);
