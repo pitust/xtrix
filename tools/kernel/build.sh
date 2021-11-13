@@ -7,7 +7,7 @@ mkdir -p build/kernel
 ldc2_wrap() {
     ldc2 -mattr=-sse,-sse2,-sse3,-ssse3 -code-model=kernel -I src \
         --relocation-model=static --gdwarf --oq \
-        --od build/kernel `find src/xtrm -type f | grep '\.d'` \
+        --od build/kernel `find src/xtrm src/libxk -type f | grep '\.d'` \
         -c --threads $(nproc) --betterC -mtriple=x86_64-elf "$@"
 }
 if [ "$KERNEL_VER_SMOOTHSTART" = 1 ]; then
