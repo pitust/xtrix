@@ -6,7 +6,7 @@
      - (0) KeLog(len, str*)
      - manipulating VMs
          - (01) KeCreateVM() -> vm
-         - (02) KeLoadELF(vm, memref, entry* | nil)
+         - (02) KeLoadELF(vm, memref) -> entry
          - (03) KeASLRAddress() -> `addr` which is free in the current process
      - manipulating threads
          - (04) KeReadRegs(thr) -> regs
