@@ -99,11 +99,27 @@ T* alloc(T, Args...)(Args args) {
     return val;
 }
 
+extern(C) void* libxk_sized_malloc(ulong size) {
+    if (size == 4096) {
+        return cast(void*)allocate_on_pool(ppage);
+    } else if (size > 64) {
+        assert(size <= 256, "Cannot allocate libxk data on the slabheaps"
+            ~ "(spam pitust to implement non-exact 4k pool support)");
+        return cast(void*)allocate_on_pool(plarge);
+    } else {
+        return cast(void*)allocate_on_pool(psmol);
+    }
+}
+extern(C) void libxk_sized_free(ulong size, void* pointer) {
+    free(size, pointer);
+}
+
 void free(T)(T* data) {
     destroy!(false)(data);
     free(T.sizeof, cast(void*)data);
 }
 void free(ulong count, void* data) {
+    if (count == 4096) assert(false,"todo: release pages.");
     if (count > 64) {
         assert(count <= 256, "Cannot free this much bytes!");
         add_to_pool(plarge, data);
