@@ -54,7 +54,7 @@ private void addToBucket(ulong bindex) {
     }
 }
 
-void* malloc(ulong size) {
+extern(C) void* malloc(ulong size) {
     foreach (idx; 0 .. bucketSizes.length) {
         ulong ssize = bucketSizes[idx];
         if (ssize > size) {
@@ -81,7 +81,7 @@ void* malloc(ulong size) {
     assertf(false, "Cannot allocate block of size {}", size);
     assert(false); // unreachable
 }
-void free(void* pointer) {
+extern(C) void free(void* pointer) {
     ulong ptr = cast(ulong)pointer;
     ulong maskPointer = getSizemapAddress(ptr);
     ubyte bucket = (cast(ubyte*)maskPointer)[0];
@@ -90,3 +90,6 @@ void free(void* pointer) {
     memset(cast(byte*)ptr, 0xff, size);
     addTargetSliceToBucket(ptr, bucket);
 }
+
+extern(C) void libxk_sized_free(ulong size, void* pointer) { free(pointer); }
+extern(C) void* libxk_sized_malloc(ulong size) { return malloc(size); }
