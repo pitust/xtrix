@@ -3,6 +3,6 @@
     "description": "A shitty OS",
     "authors": ["pitust <piotr@stelmaszek.com>"],
     "homepage": "https://git.sr.ht/~pitust/xtrix",
-    "buildOptions": ["betterC"],
+    "buildOptions": ["betterC", "unittests"],
     "importPaths": ["src"]
 }
