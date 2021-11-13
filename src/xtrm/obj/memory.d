@@ -96,7 +96,7 @@ struct MemRef {
 
     void copy_to_user_address(ulong va) {
         foreach (p; 0 .. pagecnt) {
-            ulong data = (*pages)[p];
+            ulong data = virt((*pages)[p]);
             ulong cnt = 4096;
             if (p == pagecnt - 1) cnt = size & 0xfff;
             isDoingUserCopy = true;
@@ -111,7 +111,7 @@ struct MemRef {
     }
     void copy_from_user_address(ulong va) {
         foreach (p; 0 .. pagecnt) {
-            ulong data = (*pages)[p];
+            ulong data = virt((*pages)[p]);
             ulong cnt = 4096;
             if (p == pagecnt - 1) cnt = size & 0xfff;
             isDoingUserCopy = true;
