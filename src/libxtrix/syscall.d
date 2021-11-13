@@ -209,3 +209,12 @@ error KeReadPhysicalMemory(ulong addr, ulong size, void* outaddr) {
 	}
 	return r;
 }
+XHandle KeCreateKeyedChannel(ulong key) {
+	long res;
+	asm {
+		mov RDI, key;
+		int 0x27;
+		mov res, RAX;
+	}
+	return long2handle(res);
+}
