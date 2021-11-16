@@ -73,8 +73,8 @@ extern(C) void* malloc(ulong size) {
             }
             (cast(ubyte*)maskPointer)[0] = cast(ubyte)idx;
             (cast(ubyte*)maskPointer)[1] = 1;
-            memset(cast(byte*)ptr, 0xff, ssize);
-            memset(cast(byte*)ptr, 0, size);
+            memset(cast(byte*)ptr, 0xe3, ssize);
+            memset(cast(byte*)ptr, 0x00, size);
             return cast(void*)ptr;
         }
     }
@@ -82,14 +82,19 @@ extern(C) void* malloc(ulong size) {
     assert(false); // unreachable
 }
 extern(C) void free(void* pointer) {
+    // some c programs rely on free(null) being fine
+    if (pointer == null) return;
+
     ulong ptr = cast(ulong)pointer;
     ulong maskPointer = getSizemapAddress(ptr);
     ubyte bucket = (cast(ubyte*)maskPointer)[0];
     ubyte mode = (cast(ubyte*)maskPointer)[1];
     ulong size = bucketSizes[bucket];
-    memset(cast(byte*)ptr, 0xff, size);
+    memset(cast(byte*)ptr, 0xe1, size);
     addTargetSliceToBucket(ptr, bucket);
 }
 
 extern(C) void libxk_sized_free(ulong size, void* pointer) { free(pointer); }
 extern(C) void* libxk_sized_malloc(ulong size) { return malloc(size); }
+
+alias libc_free = free;
