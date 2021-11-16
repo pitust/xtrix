@@ -3,9 +3,9 @@
 set -ex
 
 rm -rf build/kernel || true
-mkdir -p build/kernel
+mkdir -p build/kernel build/kcache
 ldc2_wrap() {
-    ldc2 -mattr=-sse,-sse2,-sse3,-ssse3 -code-model=kernel -I src \
+    ldc2 --cache=build/kcache -mattr=-sse,-sse2,-sse3,-ssse3 -code-model=kernel -I src \
         --relocation-model=static --gdwarf --oq \
         --od build/kernel `find src/xtrm src/libxk -type f | grep '\.d'` \
         -c --threads $(nproc) --betterC -mtriple=x86_64-elf "$@"
