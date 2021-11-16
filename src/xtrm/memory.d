@@ -133,3 +133,9 @@ void memory_stats() {
     printk("  + 256-byte obj pool     {}", iotuple("fmt/bytes", plarge.dataContained));
     printk("  + 64-byte smol obj pool {}", iotuple("fmt/bytes", psmol.dataContained));
 }
+
+private extern(C) pragma(mangle, "free")
+void __broken_c_free() { assert(false, "cannot free: kernel has a broken c free."); }
+
+private extern(C) pragma(mangle, "malloc")
+void __broken_c_malloc() { assert(false, "cannot malloc: kernel has a broken c malloc."); }
