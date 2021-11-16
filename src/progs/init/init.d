@@ -4,6 +4,7 @@ import libxtrix.io;
 import std.typecons;
 import libxk.hashmap;
 import libxtrix.syscall;
+import progs.init.init_srpc;
 
 struct phy { ulong base; mixin Proxy!(base); }
 
@@ -41,6 +42,8 @@ extern (C) void _start(ulong phy_stivale2_structure) {
         modp = mod.next;
     }
 
+    rpc_publish();
 
     while(1) {}
 }
+
