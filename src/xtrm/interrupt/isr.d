@@ -63,6 +63,8 @@ extern(C) void interrupt_handler(Regs* r) {
         return;
     }
 
+    printk("rip={*}", r.rip);
+
     while (1) {
         asm {
             cli; hlt;
