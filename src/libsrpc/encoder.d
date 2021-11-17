@@ -22,5 +22,12 @@ ByteBuffer encode(T)(T value) {
 }
 
 T decode(T)(ubyte* payload, ulong length, ref ulong offset) {
-    static assert(false, "Cannot decode " ~ T);
+	static if (is(T == ulong)) {
+		assert(offset + 8 < length, "decode out of bounds");
+		ulong res = *cast(ulong*)(payload + offset);
+		offset += 8;
+		return res;
+	} else {
+		static assert(false, "Cannot decode " ~ T.stringof);
+	}
 }
