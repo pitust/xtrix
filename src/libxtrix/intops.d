@@ -53,8 +53,8 @@ void sprinti(num)(
     ulong i = 100;
     ulong chars = 0;
     bool numberWasZero = false;
-    if (value < 0) {
-        value = -value;
+	if (value < 0) {
+        value = cast(num)-cast(long)value;
         output('-');
     }
     if (!value) {
