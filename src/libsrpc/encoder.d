@@ -1,6 +1,7 @@
 module libsrpc.encoder;
 
 import libxtrix.io;
+import libxk.list;
 import libxk.bytebuffer;
 
 ByteBuffer encode(T)(T value) {
@@ -27,6 +28,26 @@ T decode(T)(ubyte* payload, ulong length, ref ulong offset) {
 		ulong res = *cast(ulong*)(payload + offset);
 		offset += 8;
 		return res;
+	} else static if (is(T == uint)) {
+		assert(offset + 4 < length, "decode out of bounds");
+		uint res = *cast(uint*)(payload + offset);
+		offset += 4;
+		return res;
+	} else static if (is(T == char)) {
+		static assert(T.sizeof == 1);
+		assert(offset + 1 < length, "decode out of bounds");
+		char res = *cast(char*)(payload + offset);
+		offset += 1;
+		return res;
+	} else static if (is(T U : List!U)) {
+		List!U arr;
+		uint len = decode!uint(payload, length, offset);
+		arr.reserve(len);
+
+		foreach (i; 0 .. len) {
+			arr.append(decode!U(payload, length, offset));
+		}
+		return arr;
 	} else {
 		static assert(false, "Cannot decode " ~ T.stringof);
 	}

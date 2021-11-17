@@ -1,12 +1,15 @@
 module libsrpc.rpc_server;
 
 import std.traits;
+import libxk.list;
 import libxtrix.io;
 import libxk.malloc;
 import libxk.hashmap;
 import libsrpc.encoder;
 import libxk.bytebuffer;
 import libxtrix.syscall;
+import libxtrix.libc.malloc;
+import std.container.array;
 
 private template digit(uint n) {
 	private static const char[] digit = "0123456789"[n .. n+1];
@@ -25,6 +28,30 @@ alias RPCEndpoint = void delegate(XHandle responder, ubyte* data, ulong length, 
 
 struct RPCListener {
     HashMap!(string, RPCEndpoint) endpoints;
+	XHandle chanhandle;
+	
+	void attach(ulong id) {
+		chanhandle = KeCreateKeyedChannel(id).aok();
+	}
+	void loop() {
+		while (true) {
+			ulong sel = 0xffff;
+			XHandle resulter = void;
+			
+			XHandle req = KePoll(&chanhandle, 1, &sel, &resulter).aok("RPCListener failed to poll for an rpc request.");
+			assert(sel == 0, "kepoll did not poll correctly!");
+			assert(KeGetType(req) == type.memref, "kepoll did not return a memref!");
+			
+			ulong length = KeGetMemObjectSize(req);
+			ubyte* data = cast(ubyte*)malloc(length);
+			ulong offset = 0;
+			dispatch(data, length, offset, resulter);
+		}
+	}
+	void dispatch(ubyte* data, ulong length, ref ulong offset, XHandle responder) {
+		List!char str = decode!(List!char)(data, length, offset);
+		endpoints[cast(string)str.to_slice()](responder, data, length, offset);
+	}
 }
 private struct DispatcherWrap(Disp, Tplt, string item) {
     Disp* d;
@@ -57,8 +84,7 @@ RPCListener publish_srpc(Template, Dispatch)(string name, Dispatch* disp) {
         cast(void)&boundpanic!(Template, mname);
     }}
 
-    RPCListener l;
-
+    RPCListener l = RPCListener.init;
     static foreach (mname; __traits(allMembers, Template)) {{
     	static if (!(mname[0] == '_' && mname[1] == '_')) {
 			RPCEndpoint del = &alloc!(DispatcherWrap!(Dispatch, Template, mname))(disp).wrap;
