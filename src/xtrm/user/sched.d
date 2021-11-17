@@ -23,6 +23,8 @@ import xtrm.obj.vm;
 import xtrm.obj.thread;
 import xtrm.interrupt.regs;
 
+__gshared ulong system_sleep_gen = 0;
+
 private struct ThreadEntry {
     Thread* thr;
     ThreadEntry* next;
@@ -41,6 +43,7 @@ void init_sched() {
     _cur.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
     _cur.handles = alloc!(Obj*[512])();
     _cur.rsp0 = alloc!(ubyte[4096])();
+	_cur.sleepgen = 0;
 }
 
 void create_thread(Thread* t) {
@@ -52,7 +55,10 @@ void create_thread(Thread* t) {
 }
 
 void sched_yield() {
-    _cur = _cur.next;
+	do {
+    	_cur = _cur.next;
+		if (_cur.sleepgen < system_sleep_gen) _cur.sleepgen = system_sleep_gen;
+	} while (_cur.sleepgen > system_sleep_gen);
 }
 
 void sched_save_preirq(Regs* r) {
