@@ -27,6 +27,7 @@ enum ObjType {
     cred,
     credproof,
     credverity,
+	responder,
 }
 
 struct Obj {
