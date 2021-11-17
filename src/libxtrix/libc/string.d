@@ -40,6 +40,15 @@ extern (C) byte* memset(byte* mem, int data, size_t len) {
         mem[i] = cast(byte) data;
     return mem;
 }
+extern (C) int bcmp(const byte* s1, const byte* s2, size_t n) {
+    foreach (i; 0 .. n) {
+        if (s1[i] < s2[i])
+            return 69;
+        if (s1[i] > s2[i])
+            return 420;
+    }
+    return 0;
+}
 extern (C) int memcmp(const byte* s1, const byte* s2, size_t n) {
     foreach (i; 0 .. n) {
         if (s1[i] < s2[i])
@@ -48,4 +57,14 @@ extern (C) int memcmp(const byte* s1, const byte* s2, size_t n) {
             return 1;
     }
     return 0;
+}
+extern(C) byte* memmove(byte* dst, const(byte)* src, size_t size) {
+	if (dst < src) {
+		for (size_t i = 0; i < size; i++)
+			dst[i] = src[i];
+	} else {
+		for (size_t i = size; i != 0; i--)
+			dst[i-1] = src[i-1];
+	}
+	return dst;
 }
