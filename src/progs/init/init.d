@@ -40,9 +40,20 @@ extern (C) void _start(ulong phy_stivale2_structure) {
         assert_success(KeReadPhysicalMemory(cast(ulong)modp, StivaleModule.sizeof, &mod));
         printf("module: {}", mod.name);
         modp = mod.next;
-    }
+    	if (mod.name[0 .. 5] == "hello" && mod.name[5] == 0) {
+			printf("found stage2 mod!");
+			XHandle s2m = KeReadPhysicalMemory(mod.begin, mod.end-mod.begin).aok("cannot start stage2, mod load failed");
+			XHandle vm = KeCreateVM().aok("cannot start stage2, create vm failed.");
+			long ent = KeLoadELF(vm, s2m);
+			if (ent>>63) assert(false, "cannot start stage2, error elf loading");
+			enum STACK_SIZE = 0x4000;
+			XHandle stack = KeAllocateMemoryObject(STACK_SIZE);
+    		KeMapMemory(vm, 0xfe0000000, stack);
+			KeCreateThread(vm, ent, 0, 0, 0, 0xfe0000000 + STACK_SIZE);
+		}
+	}
 
-    rpc_publish();
+    // rpc_publish();
 
     while(1) {}
 }
