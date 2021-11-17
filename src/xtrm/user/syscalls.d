@@ -184,7 +184,33 @@ void syscall_handler(ulong sys, Regs* r) {
     } else if (sys == 0x29) {
         current.vm.copy_into(r.rdx, cast(void*)virt(r.rdi), r.rsi);
         r.rax = 0;
-    } else {
+    } else if (sys == 0x2c) {
+		while (true) {
+			foreach (i; 0 .. r.rsi) {
+				printk("KePoll is checking chan{}", i);
+				ulong hpointer = r.rdi + i * 16;
+				ulong handle;
+				current.vm.copy_out_of(hpointer, &handle, 8);
+	
+				printk(" h: {}", handle);
+				Obj* h = su_get_handle(handle);
+				if (h.type != ObjType.chan) {
+					assert(false, "incorrect handle and errors are not implemented yet");
+				}
+				Chan* c = cast(Chan*)h;
+				bool* wake; Obj** resp;
+				Obj* msg = c.dequeueInvoke(wake, resp);
+				if (msg == null) continue;
+				Responder* responder = alloc!Responder();
+				su_register_handle(r, &responder.obj);
+				if (r.rax < 0x1000) su_register_handle(r, msg);
+				current.vm.copy_into(r.rdx, &i, 8);
+				return;
+			}
+			current.sleepgen = system_sleep_gen + 1;
+			asm { int 0xfe; }
+		}
+	} else {
         printk("[user] warn: enosys {x}", sys);
 		r.rax = cast(ulong)(error.ENOSYS);
 	}
