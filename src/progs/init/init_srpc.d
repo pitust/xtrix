@@ -23,5 +23,7 @@ struct srpc_impl {
 
 void rpc_publish() {
     srpc_impl* impl = alloc!(srpc_impl)();
-    publish_srpc!(InitSRPC)("init_srpc", impl);
+    RPCListener l = publish_srpc!(InitSRPC)("init_srpc", impl);
+	l.attach(0x1314d0deda64c37a);
+	l.loop();
 }
