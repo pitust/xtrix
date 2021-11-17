@@ -224,3 +224,14 @@ XHandle KeCreateKeyedChannel(ulong key) {
 	}
 	return long2handle(res);
 }
+error KeRespond(XHandle resulter, XHandle response) {
+	ulong a = resulter.getHandle, b = response.getHandle;
+	error res;
+	asm {
+		mov RDI, a;
+		mov RSI, b;
+		int 0x3d;
+		mov res, RAX;
+	}
+	return res;
+}
