@@ -17,6 +17,8 @@ struct srpc_impl {
     void hello() { printf("hello, world!"); }
     ulong get() { return i; }
     void inc() { i++; }
+    void set(ulong val) { i = val; }
+    ulong update(ulong val) { ulong old = i; i = val; return old; }
 }
 
 void rpc_publish() {
