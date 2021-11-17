@@ -9,7 +9,6 @@ import libsrpc.encoder;
 import libxk.bytebuffer;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
-import std.container.array;
 
 private template digit(uint n) {
 	private static const char[] digit = "0123456789"[n .. n+1];
