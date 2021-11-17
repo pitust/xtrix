@@ -20,3 +20,7 @@ ByteBuffer encode(T)(T value) {
 
     return buf;
 }
+
+T decode(T)(ubyte* payload, ulong length, ref ulong offset) {
+    static assert(false, "Cannot decode " ~ T);
+}

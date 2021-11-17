@@ -2,8 +2,10 @@ module libsrpc.rpc_server;
 
 import std.traits;
 import libxtrix.io;
+import libxk.hashmap;
 import libsrpc.encoder;
 import libxk.bytebuffer;
+import libxtrix.syscall;
 
 private template digit(uint n) {
 	private static const char[] digit = "0123456789"[n .. n+1];
@@ -18,7 +20,24 @@ private template itoa(uint n) {
 		private static const char[] itoa = itoa!(n / 10) ~ digit!(n % 10);
 }
 
-void publish_srpc(Template, Dispatch)(string name, Dispatch* disp) {
+alias RPCEndpoint = void delegate(XHandle responder, void* data, ulong length);
+
+struct RPCListener {
+    HashMap!(string, RPCEndpoint) endpoints;
+}
+private struct DispatcherWrap(Disp, string item) {
+    Disp* d;
+    void wrap(XHandle responder, ubyte* data, ulong length, ref ulong offset) {
+        alias ty = typeof(__traits(getMember, item));
+        Parameters!ty param;
+        static foreach (i; 0 .. param.sizeof) {
+            param[i] = decode!(typeof(param[i]))(data, length, offset);
+        }
+        
+    }
+}
+
+RPCListener publish_srpc(Template, Dispatch)(string name, Dispatch* disp) {
     // checks
     static assert(!__traits(compiles, Template()),
         "Type " ~ Template.stringof ~ " must have a disabled constructor because it is not described correctly by it's members");
@@ -30,7 +49,13 @@ void publish_srpc(Template, Dispatch)(string name, Dispatch* disp) {
         cast(void)&boundpanic!(Template, mname);
     }}
 
+    RPCListener l;
 
+    static foreach (mname; __traits(allMembers, Template)) {{
+        l.endpoints[mname];
+    }}
+
+    return l;
 }
 
 string mangled_fn_name(Obj, string fn)() {

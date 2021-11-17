@@ -46,6 +46,9 @@
          - (1b) KePushMessage(chan, obj) -> void
          - (1c) KePopMessage(chan) -> obj
          - (1d) KePopMessageAsync(chan, thr, sig) -> obj
+         - (2b) KeInvoke(chan, msg) -> ret
+         - (2c) KePoll(chan*, count, selected*, resulter*) -> obj
+         - (2d) KeRespond(resulter, response)
      - credentials
          - (1e) KeCreateCred(name) -> cred
          - (1f) KeCredVerity(cred) -> credverity

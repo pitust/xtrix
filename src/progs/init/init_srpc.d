@@ -20,8 +20,6 @@ struct srpc_impl {
 }
 
 void rpc_publish() {
-    (cast(InitSRPC*)0).update(69);
-    
     srpc_impl* impl = alloc!(srpc_impl)();
     publish_srpc!(InitSRPC)("init_srpc", impl);
 }
