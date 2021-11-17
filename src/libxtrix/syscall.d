@@ -27,6 +27,7 @@ enum error : long {
     EINVAL = -6
 }
 
+// the enumeration is a contract with the kernel.
 enum type {
     nullobj,
     mem,
@@ -37,8 +38,10 @@ enum type {
     cred,
     credproof,
     credverity,
+	responder,
 }
 
+// layout: the layout of XHandle is a contract with the kernel.
 struct XHandle {
 	private ulong value;
 	private error err;
@@ -234,4 +237,18 @@ error KeRespond(XHandle resulter, XHandle response) {
 		mov res, RAX;
 	}
 	return res;
+}
+XHandle KePoll(XHandle* channels, ulong count, ulong* selected, XHandle* resulter) {
+	long res;
+	long theresulter;
+	asm {
+		mov RDI, channels;
+		mov RSI, count;
+		mov RDX, selected;
+		lea RCX, resulter;
+		int 0x3c;
+		mov res, RAX;
+	}
+	*resulter = long2handle(theresulter);
+	return long2handle(res);
 }
