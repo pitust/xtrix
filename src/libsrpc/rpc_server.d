@@ -2,6 +2,7 @@ module libsrpc.rpc_server;
 
 import std.traits;
 import libxtrix.io;
+import libxk.malloc;
 import libxk.hashmap;
 import libsrpc.encoder;
 import libxk.bytebuffer;
@@ -20,20 +21,27 @@ private template itoa(uint n) {
 		private static const char[] itoa = itoa!(n / 10) ~ digit!(n % 10);
 }
 
-alias RPCEndpoint = void delegate(XHandle responder, void* data, ulong length);
+alias RPCEndpoint = void delegate(XHandle responder, ubyte* data, ulong length, ref ulong offset);
 
 struct RPCListener {
     HashMap!(string, RPCEndpoint) endpoints;
 }
-private struct DispatcherWrap(Disp, string item) {
+private struct DispatcherWrap(Disp, Tplt, string item) {
     Disp* d;
     void wrap(XHandle responder, ubyte* data, ulong length, ref ulong offset) {
-        alias ty = typeof(__traits(getMember, item));
-        Parameters!ty param;
-        static foreach (i; 0 .. param.sizeof) {
+    	alias tpv = __traits(getMember, Tplt, item);
+		Parameters!(tpv) param;
+        static foreach (i; 0 .. param.length) {
             param[i] = decode!(typeof(param[i]))(data, length, offset);
         }
-        
+		static if (is(ReturnType!tpv == void)) {
+        	__traits(getMember, d, item)(param);
+			KeRespond(responder, XHandle(512));
+		} else {
+			ReturnType!tpv ret = __traits(getMember, d, item)(param);
+			auto wrap = encode(ret);
+			KeRespond(responder, KeAllocateMemRefObject(wrap.data, wrap.size));
+		}
     }
 }
 
@@ -52,7 +60,10 @@ RPCListener publish_srpc(Template, Dispatch)(string name, Dispatch* disp) {
     RPCListener l;
 
     static foreach (mname; __traits(allMembers, Template)) {{
-        l.endpoints[mname];
+    	static if (!(mname[0] == '_' && mname[1] == '_')) {
+			RPCEndpoint del = &alloc!(DispatcherWrap!(Dispatch, Template, mname))(disp).wrap;
+			l.endpoints[mname] = del;
+		}
     }}
 
     return l;
