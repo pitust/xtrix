@@ -9,8 +9,8 @@ import progs.init.init_srpc;
 struct phy { ulong base; mixin Proxy!(base); }
 
 struct StivaleModule {
-    void* begin; // Address where the module is loaded
-    void* end; // End address of the module
+    ulong begin; // Address where the module is loaded
+    ulong end; // End address of the module
     char[128] name; // 0-terminated ASCII string passed alongside the module (as specified in the config file)
     phy next; // Pointer to the next module (if any), check module_count, in the stivale_struct
 }
@@ -48,8 +48,9 @@ extern (C) void _start(ulong phy_stivale2_structure) {
 			if (ent>>63) assert(false, "cannot start stage2, error elf loading");
 			enum STACK_SIZE = 0x4000;
 			XHandle stack = KeAllocateMemoryObject(STACK_SIZE);
-    		KeMapMemory(vm, 0xfe0000000, stack);
+    		assert_success(KeMapMemory(vm, 0xfe0000000, stack));
 			KeCreateThread(vm, ent, 0, 0, 0, 0xfe0000000 + STACK_SIZE);
+            while (1) {}
 		}
 	}
 
