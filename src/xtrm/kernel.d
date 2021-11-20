@@ -20,12 +20,13 @@ import xtrm.rng;
 import xtrm.util;
 import xtrm.util;
 import xtrm.memory;
+import xtrm.obj.vm;
 import xtrm.stivale;
 import xtrm.support;
 import xtrm.cpu.cr3;
 import xtrm.cpu.gdt;
-import xtrm.obj.vm;
 import xtrm.obj.obj;
+import xtrm.user.elf;
 import xtrm.obj.thread;
 import xtrm.user.sched;
 import xtrm.obj.memory;
@@ -50,11 +51,17 @@ void init_mman(StivaleStruct* struc) {
         random_mixseed(cast(ulong)e.base + e.length);
         if (e.type == 1) {
             mem += e.length;
+            if (!eslab && e.length > (1 << 20)) {
+                e.length -= (1 << 20);
+                eslab = e.base;
+                e.base += (1 << 20);
+            }
             foreach (iter; 0..(e.length >> 12)) {
                 add_to_pool(*get_pool("pool/page"), cast(void*)(0xffff800000000000 + e.base + (iter << 12)));
             }
         }
     }
+    assert(eslab, "Cannot allocate the ESLAB!");
 }
 
 extern (C) void kmain(StivaleStruct* struc) {
@@ -114,49 +121,12 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.ss = 0x23;
 
     Thread* t = alloc!Thread;
-    t.vm = alloc!VM;
     t.rsp0 = alloc!(ubyte[4096])();
+    t.vm = alloc!VM;
     t.vm.vme = alloc!(VMEntry[256]);
     t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
 
-    ulong addr = cast(ulong)virt(init.begin);
-    ulong len = init.end - init.begin;
-    ubyte[] data = ArrayRepr!(ubyte).from(cast(ubyte*)addr, len).into();
-
-    enum off_e_entry = 24;
-    enum off_e_phoff = off_e_entry + 8;
-    enum off_e_phentsize = off_e_phoff + 8 + 8 + 4 + 2;
-    enum off_e_phnum = off_e_phentsize + 2;
-
-    enum off_p_type = 0;
-    enum off_p_offset = 8;
-    enum off_p_vaddr = off_p_offset + 8;
-    enum off_p_filesz = off_p_vaddr + 16;
-    enum off_p_memsz = off_p_filesz + 8;
-
-    ulong e_entry = *cast(ulong*)&data[off_e_entry];
-    ushort e_phnum = *cast(ushort*)&data[off_e_phnum];
-    ushort e_phentsize = *cast(ushort*)&data[off_e_phentsize];
-    ulong e_phoff = *cast(ulong*)&data[off_e_phoff];
-
-    foreach (phdr; 0 .. e_phnum) {
-        ulong curphoff = e_phoff + e_phentsize * phdr;
-
-        uint p_type = *cast(uint*)&data[curphoff + off_p_type];
-        ulong p_offset = *cast(ulong*)&data[curphoff + off_p_offset];
-        ulong p_vaddr = *cast(ulong*)&data[curphoff + off_p_vaddr];
-        ulong p_filesz = *cast(ulong*)&data[curphoff + off_p_filesz];
-        ulong p_memsz = *cast(ulong*)&data[curphoff + off_p_memsz];
-
-        if (p_type != 1) continue;
-        Memory* mm = Memory.allocate(p_memsz);
-        mm.write(0, ArrayRepr!(ubyte).from(&data[p_offset], p_filesz).into());
-
-        serial_printk("copy {x} bytes @ {*} -> {*}", p_filesz, p_offset, p_vaddr);
-        if (p_memsz != p_filesz) serial_printk("set {x} bytes @ {*}", p_memsz - p_filesz, p_offset + p_filesz);
-        t.vm.map(p_vaddr, mm);
-        mm.release(); // release handle on the stack
-    }
+    ulong e_entry = load_elf(t.vm, cast(ulong)init.begin, init.end-init.begin);
 
 	enum STACK_SIZE = 0x4000;
 	Memory* stack = Memory.allocate(STACK_SIZE);
@@ -164,6 +134,7 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.rip = e_entry;
     r.rdi = cast(ulong)cast(uint)struc;
     r.rsp = 0xfe0000000 + STACK_SIZE;
+    memcpy(cast(byte*)t.tag.ptr, cast(const byte*)"init\x00".ptr, 5);
     stack.release();
 
     t.handles = alloc!(Obj*[512])();

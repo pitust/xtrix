@@ -84,7 +84,7 @@ struct VM {
         }
         return null;
     }
-    void copy_into(ulong va, void* data, ulong count) {
+    void copy_into(ulong va, const(void)* data, ulong count) {
         copy_from_cr3(current.vm.lowhalf);
         copy_to_cr3(lowhalf);
         isDoingUserCopy = true;

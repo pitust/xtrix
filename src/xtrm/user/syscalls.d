@@ -19,10 +19,13 @@ import xtrm.io;
 import xtrm.rng;
 import xtrm.util;
 import xtrm.memory;
+import xtrm.obj.vm;
 import xtrm.cpu.cr3;
 import xtrm.obj.obj;
+import xtrm.support;
 import libxk.hashmap;
 import xtrm.obj.chan;
+import xtrm.user.elf;
 import xtrm.obj.thread;
 import xtrm.obj.memory;
 import xtrm.user.sched;
@@ -62,20 +65,54 @@ void syscall_handler(ulong sys, Regs* r) {
     if (sys == 0) {
         ulong offset;
         char[] message = ke_log_buffer[0 .. r.rsi];
-        Memory* range = current.vm.region_for(r.rdi, offset);
-        if (r.rsi > 8192) r.rsi = 8192;
-        if (range == null) {
-            printk("[user] warn: efault while handling KeLog!");
-            return;
-        }
-        range.read(offset, cast(ubyte[])message);
-
+        current.vm.copy_out_of(r.rdi, message.ptr, r.rsi);
         printk("[user] {}", message);
+    } else if (sys == 0x01) {
+        VM* vm = alloc!VM;
+        vm.vme = alloc!(VMEntry[256]);
+        vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+        su_register_handle(r, &vm.obj);
+    } else if (sys == 0x02) {
+        VM* target_vm = cast(VM*)su_get_handle(r.rdi);
+        MemRef* code = cast(MemRef*)su_get_handle(r.rsi);
+        if (target_vm.type != ObjType.vm) { assert(false, "todo: error on wrong types in KeLoadELF"); }
+        if (code.type != ObjType.memref) { assert(false, "todo: error on wrong types in KeLoadELF"); }
+        if (code.size >= (1 << 20)) { assert(false, "todo: error on bounds in KeLoadELF"); }
+        code.copy_to_phy(eslab);
+        r.rax = load_elf(target_vm, eslab, code.size);
     } else if (sys == 0x03) {
         ulong offset = 0;
         do {
             r.rax = random_aslr();
         } while (current.vm.region_for(r.rax, offset));
+    } else if (sys == 0x06) {
+        // vm handle: rdi
+        VM* target_vm = cast(VM*)su_get_handle(r.rdi);
+
+        if (target_vm.type != ObjType.vm) { assert(false, "todo: error on wrong types in KeLoadELF"); }
+
+        Thread* t = alloc!Thread;
+        t.rsp0 = alloc!(ubyte[4096])();
+        t.vm = target_vm;
+        
+        t.regs.cs = 0x1b;
+        t.regs.flags = /* IF */ 0x200;
+        t.regs.ss = 0x23;
+
+        t.regs.rip = r.rsi;
+        t.regs.rdi = r.rdx;
+        t.regs.rsi = r.rcx;
+        t.regs.rdx = r.r8;
+        t.regs.rsp = r.r9;
+        current.sleepgen += 999;
+        printk("rip: {*}", t.regs.rip);
+        memcpy(cast(byte*)t.tag.ptr, cast(immutable byte*)"new-thread\x00".ptr, 5);
+
+        target_vm.rc++;
+        t.handles = alloc!(Obj*[512])();
+
+        create_thread(t);
+        r.rax = 0;
     } else if (sys == 0x0b) {
         ulong offset;
         Memory* mr = Memory.allocate(r.rdi);
@@ -168,6 +205,21 @@ void syscall_handler(ulong sys, Regs* r) {
             r.rax = 0;
         }
         return;
+    } else if (sys == 0x23) {
+        VM* target_vm = cast(VM*)su_get_handle(r.rdi);
+        Obj* mem = su_get_handle(r.rsi);
+        if (target_vm.type != ObjType.vm) { assert(false, "todo: error on wrong types in KeLoadELF"); }
+
+        if (mem.type != ObjType.mem) {
+            printk("[user] warn: etype while handling KeMapMemory/2: not a memory object!");
+            r.rax = cast(ulong)(error.ETYPE);
+            return;
+        }
+        Memory* m = cast(Memory*)mem;
+        target_vm.map(r.rdx, m);
+        copy_to_cr3(current.vm.lowhalf);
+        r.rax = 0;
+        return;
     } else if (sys == 0x25) {
         Obj* mem = su_get_handle(r.rdi);
 
@@ -181,6 +233,11 @@ void syscall_handler(ulong sys, Regs* r) {
         copy_to_cr3(current.vm.lowhalf);
         r.rax = 0;
         return;
+    } else if (sys == 0x28) {
+        // addr, size
+        MemRef* mref = MemRef.allocate(r.rsi);
+        mref.copy_from_phy(r.rdi);
+        su_register_handle(r, &mref.obj);
     } else if (sys == 0x29) {
         current.vm.copy_into(r.rdx, cast(void*)virt(r.rdi), r.rsi);
         r.rax = 0;

@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 module xtrm.user.sched;
 
+import xtrm.io;
 import xtrm.memory;
 import xtrm.cpu.tss;
 import xtrm.cpu.cr3;

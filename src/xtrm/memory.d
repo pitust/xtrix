@@ -18,6 +18,8 @@ module xtrm.memory;
 import xtrm.io;
 import xtrm.support;
 
+__gshared ulong eslab;
+
 private struct Slab {
     Slab* next;
     ulong count;
@@ -90,7 +92,7 @@ T* alloc(T, Args...)(Args args) {
         val = cast(T*)allocate_on_pool(ppage);
     } else static if (T.sizeof > 64) {
         static assert(T.sizeof <= 256, "Cannot allocate " ~ T.stringof ~ " on the slabheaps"
-            ~ "(spam pitust to implement non-exact 4k pool support)");
+            ~ "(spam pitust to implement non-exact 4k pool support). size=");
         val = cast(T*)allocate_on_pool(plarge);
     } else {
         val = cast(T*)allocate_on_pool(psmol);

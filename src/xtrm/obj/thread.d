@@ -27,6 +27,7 @@ struct Thread {
     Obj*[512]* handles;
     ubyte[4096]* rsp0;
 	ulong sleepgen;
+    char[3872] tag;
 	long allocateHandle() {
         assert(handles);
         foreach (i; 0 .. 512) {

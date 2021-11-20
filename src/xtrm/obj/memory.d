@@ -107,6 +107,7 @@ struct MemRef {
                 rep; movsb;
             }
             isDoingUserCopy = false;
+            va += 4096;
         }
     }
     void copy_from_user_address(ulong va) {
@@ -122,6 +123,37 @@ struct MemRef {
                 rep; movsb;
             }
             isDoingUserCopy = false;
+            va += 4096;
+        }
+    }
+    void copy_from_phy(ulong phy) {
+        ulong va = virt(phy);
+        foreach (p; 0 .. pagecnt) {
+            ulong data = virt((*pages)[p]);
+            ulong cnt = 4096;
+            if (p == pagecnt - 1) cnt = size & 0xfff;
+            asm {
+                mov RSI, va;
+                mov RDI, data;
+                mov RCX, cnt;
+                rep; movsb;
+            }
+            va += 4096;
+        }
+    }
+    void copy_to_phy(ulong phy) {
+        ulong va = virt(phy);
+        foreach (p; 0 .. pagecnt) {
+            ulong data = virt((*pages)[p]);
+            ulong cnt = 4096;
+            if (p == pagecnt - 1) cnt = size & 0xfff;
+            asm {
+                mov RDI, va;
+                mov RSI, data;
+                mov RCX, cnt;
+                rep; movsb;
+            }
+            va += 4096;
         }
     }
 }
