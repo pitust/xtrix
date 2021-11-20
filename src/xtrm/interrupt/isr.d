@@ -27,7 +27,7 @@ extern(C) void interrupt_handler(Regs* r) {
     if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0xf) == 2 && ((r.error) >> 4) >= 0x10) {
         r.isr = (r.error >> 4) + 0xf0;
     }
-    if (r.isr != LAPIC_DEADLINE_IRQ) serial_printk("rx irq #{}!", iotuple("x86/irq", r.isr));
+    if (r.isr != LAPIC_DEADLINE_IRQ) serial_printk("rx irq #{} in thread {}!", iotuple("x86/irq", r.isr), current.tag.ptr);
 	if (r.isr == 0xe) {
 		printk("\x1b[r] ERROR: \x1b[w_0] Got page fault while executing code in ring{}", r.cs & 3);
 		ulong cr2;
@@ -36,9 +36,10 @@ extern(C) void interrupt_handler(Regs* r) {
 			mov cr2, RAX;
 		}
 		printk("cr2: {*}", cr2);
-		printk("flags: {x}", r.flags);
+        printk("flags: {x}", r.flags);
+        printk("error: {x}", r.error);
 		printk("is doing user copy: {}", isDoingUserCopy);
-		printk("insn: {x}", *cast(ushort*)r.rip);
+        if (cr2 != r.rip) printk("insn: {x}", *cast(ushort*)r.rip);
         if (r.flags == 2 && r.cs == 0x28 && isDoingUserCopy && *cast(ushort*)r.rip == 0xa4f3) {
             r.rip += 2;
             printk("ok back to you, kernel.");
@@ -62,8 +63,9 @@ extern(C) void interrupt_handler(Regs* r) {
         r.rip += 2;
         return;
     }
-
-    printk("rip={*}", r.rip);
+    
+    printk("Encontered unknown interrupt from ring{}! rip={*}", r.cs&3, r.rip);
+    printk("Error information: {} | {x}", r.error, r.error);
 
     while (1) {
         asm {
