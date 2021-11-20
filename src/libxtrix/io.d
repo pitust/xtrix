@@ -132,6 +132,7 @@ void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(Asse
 void assert_success(string file = __FILE__, uint line = __LINE__)(error e) {
 	if (e != error.EOK) {
 		printf("Unexpected error: {} at {}:{}", e, file, line);
+		while (1) {}
 	}
 }
 void assert_success(string file = __FILE__, uint line = __LINE__)(XHandle h) {
