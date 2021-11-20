@@ -22,27 +22,5 @@ import libxtrix.libc.malloc;
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
 extern (C) void _start() {
-	XHandle chan = KeCreateChannel();
-	if (chan.isError) assert(false, "KeCreateChannel failed!");
-	{
-		string msg = "hello, channel world!";
-		XHandle data_out = KeAllocateMemRefObject(msg);
-		assert_success(data_out);
-		assert_success(KePushMessage(chan, data_out));
-		printf("sent message: {}", msg);
-	}
-
-	{
-		XHandle msg = KePopMessage(chan);
-		assert_success(msg);
-		if (msg.getType() != type.memref)
-			assertf(false, "popped data handle is of type {}, expected type::memref", msg.getType());
-		
-		ulong msg_size = KeGetMemObjectSize(msg);
-		char* data_in = cast(char*)malloc(msg_size + 1);
-		assert_success(KeReadMemory(msg, 0, msg_size, data_in));
-		printf("recieved message: {}", data_in);
-	}
-
-	while (true) {}
+	asm { a: jmp a; }
 }
