@@ -84,6 +84,41 @@ XHandle long2handle(long l) {
 	return XHandle(cast(ulong)l);
 }
 
+XHandle KeCreateVM() {
+	long r;
+	asm {
+		int 0x11;
+		mov r, RAX;
+	}
+	return long2handle(r);
+}
+long KeLoadELF(XHandle vm, XHandle elf) {
+	ulong vmp = vm.getHandle, elfp = elf.getHandle;
+	long r;
+
+	asm {
+		mov RDI, vmp;
+		mov RSI, elfp;
+		int 0x12;
+		mov r, RAX;
+	}
+	return r;
+}
+XHandle KeCreateThread(XHandle vm, ulong rip, ulong rdi, ulong rsi, ulong rdx, ulong rsp) {
+	ulong vmp = vm.getHandle;
+	long h;
+	asm {
+		mov RDI, vmp;
+		mov RSI, rip;
+		mov RDX, rdi;
+		mov RCX, rsi;
+		mov R8, rdx;
+		mov R9, rsp;
+		int 0x16;
+		mov h, RAX;
+	}
+	return long2handle(h);
+}
 type KeGetType(XHandle handle) {
 	ulong xh = handle.getHandle();
 	type ty;
@@ -159,6 +194,19 @@ error KeReadMemory(XHandle obj, ulong addr, ulong count, void* outaddr) {
 	}
 	return r;
 }
+error KeMapMemory(XHandle vm, ulong addr, XHandle h) {
+	error r;
+	ulong vmvalue = vm.getHandle();
+	ulong hvalue = h.getHandle();
+	asm {
+		mov RDI, vmvalue;
+		mov RSI, hvalue;
+		mov RDX, addr;
+		int 0x33;
+		mov r, RAX;
+	}
+	return r;
+}
 error KeMapMemory(XHandle h, ulong addr) {
 	error r;
 	if (h.isError) assert(false, "Cannot map an error into memory dumbo");
@@ -206,6 +254,16 @@ ulong KeASLRAddress() {
 		mov res, RAX;
     }
 	return res;
+}
+XHandle KeReadPhysicalMemory(ulong addr, ulong  size) {
+	long r;
+	asm {
+		mov RDI, addr;
+		mov RSI, size;
+		int 0x38;
+		mov r, RAX;
+	}
+	return long2handle(r);
 }
 error KeReadPhysicalMemory(ulong addr, ulong size, void* outaddr) {
 	error r;
