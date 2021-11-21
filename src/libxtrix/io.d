@@ -128,13 +128,26 @@ void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(Asse
 	while (1) {}
 }
 
+string tr_err(long er) {
+	if (er == error.EOK) { return "No error"; }
+	if (er == error.EACCES) { return "Permission denied"; }
+	if (er == error.ENOSYS) { return "Function not implemented"; }
+	if (er == error.EAGAIN) { return "Resource temporarily unavailable"; }
+	if (er == error.EFAULT) { return "Bad address"; }
+	if (er == error.EINVAL) { return "Invalid operation"; }
+	printf("warn: unknown error: {}", er);
+	return "Unknown error";
+}
 
-void assert_success(string file = __FILE__, uint line = __LINE__)(error e) {
-	if (e != error.EOK) {
-		printf("Unexpected error: {} at {}:{}", e, file, line);
-		while (1) {}
+void perror(string errcat) {
+	if (errno) {
+		printf("{}: {}", errcat, tr_err(errno));
+		errno = 0;
 	}
 }
-void assert_success(string file = __FILE__, uint line = __LINE__)(XHandle h) {
-	if (h.isError()) assert_success!(file, line)(h.getError());
+
+void anoerr(string file = __FILE__, int line = __LINE__)(string errcat) {
+	if (errno) {
+		assertf!(file, line)(false, "{}: {}", errcat, tr_err(errno));
+	}
 }

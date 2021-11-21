@@ -24,16 +24,7 @@ struct Thread {
     Obj obj = Obj(ObjType.thr); alias obj this;
     Regs regs;
     VM* vm;
-    Obj*[512]* handles;
     ubyte[4096]* rsp0;
 	ulong sleepgen;
-    char[3872] tag;
-	long allocateHandle() {
-        assert(handles);
-        foreach (i; 0 .. 512) {
-            if ((*handles)[i]) continue;
-            return i;
-        }
-        return -1;
-    }
+    char[3880] tag;
 }

@@ -3,92 +3,26 @@
  - triggered with int (10h + syscall number)
  - sysv: rdi is sysno; rsi, rdx, rcx is args; rax is return
  - minimal syscall set:
-     - (0) KeLog(len, str*)
-     - manipulating VMs
-         - (01) KeCreateVM() -> vm
-         - (02) KeLoadELF(vm, memref) -> entry
-         - (03) KeASLRAddress() -> `addr` which is free in the current process
-     - manipulating threads
-         - (04) KeReadRegs(thr) -> regs
-         - (05) KeWriteRegs(thr, regs)
-         - (06) KeCreateThread(vm, rip, rdi, rsi, rdx, rsp) -> thr
-         - (07) KeChangeThreadStopCounter(thr, delta) -> thr.counter += delta, thr.counter
-         - (08) KeSendSignal(sig, rsi)
-         - (09) KeCreateSignal(thr, rip, rdi) -> sig
-         - (0a) KeGetSelfThread() -> thr
-     - memory objects
-         - (0b) KeAllocateMemoryObject(size) -> mem
-         - (0c) KeAllocateMemRefObject(addr, size) -> memref
-         - (0d) KeGetMemObjectSize(mem | memref) -> int
-         - (0e) KeReadMemory(mem | memref, addr, count, outaddr)
-         - (0f) KeWriteMemory(mem, addr, count, outaddr)
-         - (23) KeMapMemory(vm, mem, addr)
-         - (24) KeUnmapMemory(vm, mem)
-         - (25) (alt) KeMapMemory(mem, addr)
-         - (26) (alt) KeUnmapMemory(mem)
-         - (27) KeCreateMemoryForPhys(addr, size) -> mem
-         - (28) KeReadPhysicalMemory(addr, size) -> memref
-         - (29) (alt) KeReadPhysicalMemory(addr, size, outaddr)
-         - (2a) KeLookupPhysicalAddress(mem, page) -> phys
-         - (10) KeGetMemoryObjectByAddress(vm, addr, size* | nil) -> mem | nullobj
-     - objects
-         - (11) KeCloneObject(obj) -> obj
-         - (12) KeDeleteObject(handle<obj>)
-         - (13) KeRefCount(obj) -> int
-         - (14) KeGetType(obj) -> objtype
-         - (15) KeIsNull(obj) -> `bool` true if KeGetType(obj) is nullobj, else false
-     - channels
-         - (16) KeCreateChannel() -> chan
-         - (17) KeCreateKeyedChannel(key) -> chan
-         - (18) KeDestroyChannel(chan)
-         - (19) KeGetChannelByName(name) -> chan
-         - (1a) KeMakeInfiniteChannel(chan, isinfinite)
-         - (1b) KePushMessage(chan, obj) -> void
-         - (1c) KePopMessage(chan) -> obj
-         - (1d) KePopMessageAsync(chan, thr, sig) -> obj
-         - (2b) KeInvoke(chan, msg) -> ret
-         - (2c) KePoll(chan*, count, selected*, resulter*) -> obj
-         - (2d) KeRespond(resulter, response)
-     - credentials
-         - (1e) KeCreateCred(name) -> cred
-         - (1f) KeCredVerity(cred) -> credverity
-         - (20) KeCredProve(cred, obj) -> credproof
-         - (21) KeCheckCred(credproof, credverity) -> `credproof.obj` if credproof.cred is credverity.cred, nullobj otherwise
-         - (22) KeLockNamedChannels(credverity)
- - objects:
-     - nullobj
-     - mem
-         - size
-         - phys
-     - memref
-         - size
-         - data*
-     - vm
-         - { addr, mem }[]
-         - pagetable
-     - thr
-         - obj[512]
-         - regs
-         - vm
-     - chan
-         - write: int
-         - read: int
-         - obj[512]*
-         - mode: enum[finite, infinite]
-     - cred
-         - name (str)
-     - credproof
-         - cred*
-         - obj
-     - credverity
-         - cred*
- - init is pretty easy:
-     - let initelf: memref = module("init.elf")
-     - let initrd: memref = module("initrd.bin")
-     - let entry = 0
-     - let vm = KeCreateVMFromELF(initelf, &entry)
-     - let stack = KeASLRAddress(vm)
-     - KeAddMemoryObjectToVM(vm, KeAllocateMemoryObject(0x1000), stack)
-     - let thr = KeCreateThread(vm, entry, 0, 0, 0, stack + 0x1000)
-     - KePushMessage(KeCreateNamedChannel("kernel:initprocess"), thr)
-     - KePushMessage(KeCreateNamedChannel("kernel:initrd"), initrd)
+     - (00) sys_dbglog(len, str*)
+     - (01) sys_mmap(addr, len)
+     - (02) sys_phymap(phy, virt, len)
+     - (13) sys_phyread(phy, virt, len)
+       - special value `0x6b7a0db87ad4d3c1` specifies to read the stivale2 structure.
+     - IPC stuff
+        - (03) sys_open_pipe(side: 0=client 1=server, chan) -> xid
+        - (04) sys_close(xid)
+        - (05) sys_send_region(xid, addr, len)
+        - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
+        - (07) sys_send_data(xid, dataptr, len)
+        - (08) sys_recv_data_len(xid) -> len
+        - (09) sys_recv_data(xid, dataptr, len) -> 0=success 1=fail
+        - (0a) sys_send_ul(xid, ulong)
+        - (0b) sys_recv_ul(xid) -> ulong
+        - (0c) sys_send_barrier(xid)
+        - (0d) sys_recv_barrier(xid)
+     - Process stuff
+        - (0e) sys_getpid() -> pid
+        - (0f) sys_getuid() -> uid
+        - (10) sys_fork() -> 0=child cpid=parent
+        - (11) sys_exec(elfptr, elfsz, argc, argv)
+        - (12) sys_setuid(sub-uid)

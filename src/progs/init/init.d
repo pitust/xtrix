@@ -1,10 +1,9 @@
 module progs.init.init;
 
+import libxk.date;
 import libxtrix.io;
 import std.typecons;
-import libxk.hashmap;
 import libxtrix.syscall;
-import progs.init.init_srpc;
 
 struct phy { ulong base; mixin Proxy!(base); }
 
@@ -30,8 +29,15 @@ struct StivaleStruct {
     ulong epoch; // UNIX epoch at boot, read from system RTC
 }
 
-extern (C) void _start(ulong phy_stivale2_structure) {
+
+extern(C) int main(string[] args) {
+    StivaleStruct struc;
+    ulong addr = 0xfefe_0000;
     printf("Hello, world!");
+    
+    sys_phyread(0x6b7a0db87ad4d3c1, &struc, StivaleStruct.sizeof);
+    anoerr("sys_phyread");
+    
     while (1) {}
 }
 

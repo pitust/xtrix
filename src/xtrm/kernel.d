@@ -65,6 +65,7 @@ void init_mman(StivaleStruct* struc) {
 }
 
 extern (C) void kmain(StivaleStruct* struc) {
+    saddr = cast(ulong)struc;
     init_low_half();
     random_mixseed(struc.epoch);
 
@@ -137,7 +138,6 @@ extern (C) void kmain(StivaleStruct* struc) {
     memcpy(cast(byte*)t.tag.ptr, cast(const byte*)"init\x00".ptr, 5);
     stack.release();
 
-    t.handles = alloc!(Obj*[512])();
     t.regs = r;
 
     create_thread(t);
