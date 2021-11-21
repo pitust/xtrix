@@ -4,6 +4,7 @@ import libxk.date;
 import libxtrix.io;
 import std.typecons;
 import libxtrix.syscall;
+import libxtrix.libc.malloc;
 
 struct phy { ulong base; mixin Proxy!(base); }
 
@@ -29,7 +30,6 @@ struct StivaleStruct {
     ulong epoch; // UNIX epoch at boot, read from system RTC
 }
 
-
 extern(C) int main(string[] args) {
     StivaleStruct struc;
     ulong addr = 0xfefe_0000;
@@ -37,6 +37,31 @@ extern(C) int main(string[] args) {
     
     sys_phyread(0x6b7a0db87ad4d3c1, &struc, StivaleStruct.sizeof);
     anoerr("sys_phyread");
+
+    phy mod = struc.modules;
+    foreach (i; 0 .. struc.module_count) {
+        StivaleModule mod_desc;
+        sys_phyread(mod.base, &mod_desc, StivaleModule.sizeof);
+        if (mod_desc.name[0..5] != "font\x00" && mod_desc.name[0..5] != "init\x00") {
+            printf(" + {}", mod_desc.name.ptr);
+            ulong size =  (mod_desc.end - mod_desc.begin + 4095) & ~0xfff;
+            sys_phymap(mod_desc.begin, addr, size);
+            anoerr("sys_phymap");
+
+            if (!sys_fork()) {
+                // anoerr("sys_fork");
+                // char*[2] argv;
+                // argv[0] = mod_desc.name.ptr;
+                // sys_rawexec(cast(void*)addr, size, 1, argv.ptr);
+                // assert(false, "failed to exec!");
+                printf("child...");
+            } else {
+                // addr += size;
+                printf("parent...");
+            }
+        }
+        mod = mod_desc.next;
+    }
     
     while (1) {}
 }

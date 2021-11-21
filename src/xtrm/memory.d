@@ -89,15 +89,19 @@ T* alloc(T, Args...)(Args args) {
 
     T* val;
     static if (T.sizeof == 4096) {
+        enum asize = 4096;
         val = cast(T*)allocate_on_pool(ppage);
     } else static if (T.sizeof > 64) {
         static if (T.sizeof > 256 && T.sizeof != 4096) pragma(msg, T.sizeof);
         static assert(T.sizeof <= 256, "Cannot allocate " ~ T.stringof ~ " on the slabheaps"
             ~ "(spam pitust to implement non-exact 4k pool support). size=");
+        enum asize = 256;
         val = cast(T*)allocate_on_pool(plarge);
     } else {
+        enum asize = 64;
         val = cast(T*)allocate_on_pool(psmol);
     }
+    memset(cast(byte*)val, 0, asize);
     emplace(val, args);
     return val;
 }
@@ -148,6 +152,8 @@ private __gshared ulong[256] kpages;
 
 private ulong* get_ptr_ptr(ulong va) {
     import xtrm.cpu.cr3;
+    assert(va >= 0xffff800000000000);
+    va -= 0xffff800000000000;
 
     if (!cptop) {
         cptop = true;

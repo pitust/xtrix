@@ -43,11 +43,20 @@ void sys_mmap(ulong addr, ulong size) {
 	assert(false, "TODO: mmap");
 }
 
-// - (02) sys_phymap(phy, virt, len)
-void sys_phymap(ulong phy, ulong virt, ulong len) {
-    assert(false, "TODO: phymap");
+/// - (02) sys_phymap(phy, virt, len)
+long sys_phymap(ulong phy, ulong virt, ulong len) {
+    long r;
+    asm {
+        mov RDI, phy;
+        mov RSI, virt;
+        mov RDX, len;
+        int 0x12;
+        mov r, RAX;
+    }
+    errno = r;
+    return r;
 }
-// - (13) sys_phyread(phy, virt, len)
+/// - (13) sys_phyread(phy, virt, len)
 long sys_phyread(ulong phy, void* virt, ulong len) {
     long res;
     asm {
@@ -73,8 +82,32 @@ long sys_phyread(ulong phy, void* virt, ulong len) {
 // - (0d) sys_recv_barrier(xid)
 // - (0e) sys_getpid() -> pid
 // - (0f) sys_getuid() -> uid
-// - (10) sys_fork() -> 0=child cpid=parent
-// - (11) sys_exec(elfptr, elfsz, argc, argv)
+
+/// - (10) sys_fork() -> 0=child cpid=parent
+long sys_fork() {
+    long r;
+    asm {
+        int 0x20;
+        mov r, RAX;
+    }
+    errno = r < 0 ? r : 0;
+    return r;
+}
+
+/// - (11) sys_exec(elfptr, elfsz, argc, argv)
+long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
+    long r;
+    asm {
+        mov RDI, elfptr;
+        mov RSI, elfptr;
+        mov RDX, argc;
+        mov RCX, argv;
+        int 0x21;
+        mov r, RAX;
+    }
+    errno = r;
+    return r;
+}
 // - (12) sys_setuid(sub-uid)
 
 

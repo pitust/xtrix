@@ -24,7 +24,8 @@ struct Thread {
     Obj obj = Obj(ObjType.thr); alias obj this;
     Regs regs;
     VM* vm;
-    ubyte[4096]* rsp0;
+    ulong[4] rsp0_phy;
+    ulong rsp0_virt;
 	ulong sleepgen;
-    char[3880] tag;
+    char[3848] tag;
 }

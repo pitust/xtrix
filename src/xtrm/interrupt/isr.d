@@ -38,9 +38,10 @@ extern(C) void interrupt_handler(Regs* r) {
 		printk("cr2: {*}", cr2);
         printk("flags: {x}", r.flags);
         printk("error: {x}", r.error);
+        printk("thread: `{}`", current.tag.ptr);
 		printk("is doing user copy: {}", isDoingUserCopy);
         if (cr2 != r.rip) printk("insn: {x}", *cast(ushort*)r.rip);
-        if (r.flags == 2 && r.cs == 0x28 && isDoingUserCopy && *cast(ushort*)r.rip == 0xa4f3) {
+        if ((r.error & 6) == 2 && r.cs == 0x28 && isDoingUserCopy && *cast(ushort*)r.rip == 0xa4f3) {
             r.rip += 2;
             printk("ok back to you, kernel.");
             return;

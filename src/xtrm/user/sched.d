@@ -41,9 +41,9 @@ void init_sched() {
     _cur.thr = alloc!Thread;
     _cur.next = _cur;
     _cur.vm = alloc!VM;
-    _cur.vm.entries = alloc!(Memory*[512]);
+    _cur.vm.entries = alloc!(VMEntry[256]);
     _cur.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
-    _cur.rsp0 = alloc!(ubyte[4096])();
+    _cur.rsp0_virt = alloc_stack(_cur.rsp0_phy);
 	_cur.sleepgen = 0;
 }
 
@@ -70,5 +70,5 @@ void sched_save_preirq(Regs* r) {
 void sched_restore_postirq(Regs* r) {
     *r = _cur.regs;
     copy_to_cr3(_cur.vm.lowhalf);
-    set_rsp0(*_cur.rsp0);
+    set_rsp0(_cur.rsp0_virt);
 }

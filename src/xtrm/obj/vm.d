@@ -26,10 +26,15 @@ import xtrm.user.sched;
 
 __gshared bool isDoingUserCopy = false;
 
+struct VMEntry { 
+    Memory* ptr;
+    ulong addr;
+}
+
 struct VM {
     Obj obj = Obj(ObjType.vm); alias obj this;
     ulong[256]* lowhalf;
-    Memory*[512]* entries;
+    VMEntry[256]* entries;
     ulong vme_count = 0;
 
     private ulong* get_ptr_ptr(ulong va) {
@@ -51,19 +56,32 @@ struct VM {
             
             pte = *cast(ulong[512]*)(0xffff800000000000 + ptk & ~0xfff);
         }
+        
+        ulong* ptr = &pte[(va_val >> 12) & 0x1ff];
+        printk("map va {x} to pte at {x}", va, cast(ulong)ptr);
+        return ptr;
+    }
 
-        return &pte[(va_val >> 12) & 0x1ff];
+    void cloneto(VM* other) {
+        foreach (i; 0 .. vme_count) {
+            VMEntry ent = (*entries)[i];
+            other.map(ent.addr, ent.ptr.clone());
+        }
     }
 
     // lifetime(phy): phy is owned by the caller
     void map(ulong va, Memory* phy) {
-        (*entries)[vme_count++] = phy;
+        (*entries)[vme_count++] = VMEntry(phy, va);
         phy.rc += 1;
         foreach (i; 0 .. phy.pgCount) {
             ulong phyaddr = phys((*phy.pages)[i]);
             serial_printk("map: {*} -> {*}", va + (i << 12), phyaddr);
             *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
         }
+    }
+    void map(ulong va, ulong phy) {
+        serial_printk("map: {*} -> {*}", va, phys(phy));
+        *get_ptr_ptr(va) = 7 | phys(phy);
     }
     void copy_into(ulong va, const(void)* data, ulong count) {
         copy_from_cr3(current.vm.lowhalf);

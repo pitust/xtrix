@@ -50,6 +50,40 @@ void syscall_handler(ulong sys, Regs* r) {
             printk("[user] {}", message);
             break;
         }
+        case 0x02: {
+            ulong phy = r.rdi; ulong virt = r.rsi; ulong len = r.rdx;
+            foreach (i; 0 .. (len + 4096) >> 12) {
+                current.vm.map(virt + (i << 12), phy + (i << 12));
+            }
+            r.rax = 0;
+            break;
+        }
+        case 0x10: {
+            VM* newvm = alloc!VM;
+            newvm.entries = alloc!(VMEntry[256]);
+            newvm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+            current.vm.cloneto(newvm);
+            Thread* nt = alloc!Thread();
+            nt.rsp0_virt = alloc_stack(nt.rsp0_phy);
+            nt.vm = newvm;
+            nt.regs = *r;
+            nt.regs.rax = 0;
+            nt.regs.rip += 2;
+            memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
+            memcpy(cast(byte*)&nt.tag[7], cast(byte*)&current.tag, 4096 - 7);
+            r.rax = 69;
+            create_thread(nt);
+
+            break;
+        }
+        //     sys_exec(elfptr, elfsz, argc, argv)
+        //     ulong elfptr = r.rdi; ulong elfsz = r.rsi; ulong argc = r.rdx; ulong argv = r.rdx;
+
+        //     curre
+        //     break;
+        // }
+        //     break;
+        // }
         case 0x13: {
             ulong phy = r.rdi; ulong vaddr = r.rsi; ulong len = r.rdx;
             if (phy == 0x6b7a0db87ad4d3c1) phy = saddr;

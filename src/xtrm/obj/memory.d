@@ -38,6 +38,16 @@ struct Memory {
 
         return m;
     }
+    Memory* clone() {
+        __gshared ubyte[4096] copybuf;
+        Memory* other = Memory.allocate(pgCount<<12);
+        printk("cloning an {}-page value", pgCount);
+        foreach (i; 0 .. pgCount) {
+            read(i<<12, copybuf);
+            other.write(i<<12, copybuf);
+        }
+        return other;
+    }
 
     void write(ulong offset, ubyte[] values) {
         foreach (i; 0 .. values.length) {

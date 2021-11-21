@@ -17,8 +17,8 @@ module xtrm.cpu.tss;
 
 private __gshared ubyte[0x6b] tss;
 
-void set_rsp0(ubyte[] rsp0) {
-    *cast(ulong*)&tss[4] = cast(ulong)&rsp0.ptr[rsp0.length];
+void set_rsp0(ulong rsp0) {
+    *cast(ulong*)&tss[4] = rsp0 + 0x4000;
 }
 
 ulong tss_init() {
