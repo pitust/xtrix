@@ -16,6 +16,7 @@
 module xtrm.obj.obj;
 
 import xtrm.io;
+import xtrm.memory;
 
 enum ObjType {
     nullobj,

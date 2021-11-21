@@ -40,6 +40,16 @@ enum error : long {
     EINVAL = -6,
 }
 
+private __gshared ulong khbase = 0;
+private ulong su_offset_handle(ulong handle) {
+    if (!khbase) khbase = random_ulong() & 0xfff0_0000; // this is not for security but for debuggability
+    return handle + khbase;
+}
+private ulong su_unoffset_handle(ulong handle) {
+    if (!khbase) khbase = random_ulong() & 0xfff0_0000; // this is not for security but for debuggability
+    return handle - khbase;
+}
+
 // lifetime(o): o is owned by the callee and is transferred to the caling thread.
 void su_register_handle(Regs* r, Obj* o) {
     Thread* c = current();
@@ -50,12 +60,16 @@ void su_register_handle(Regs* r, Obj* o) {
         return;
     }
     (*c.handles)[handle] = o;
-    r.rax = handle;
+    r.rax = su_offset_handle(handle);
 }
 // lifetime(return value): the returned value is owned by the calling thread
 Obj* su_get_handle(ulong h) {
+    h = su_unoffset_handle(h);
+
     if (h >= 512) return getnull();
-    return (*current.handles)[h];
+    Obj* handle = (*current.handles)[h];
+    if (!handle) return getnull();
+    return handle;
 }
 
 __gshared char[8192] ke_log_buffer;
@@ -104,8 +118,6 @@ void syscall_handler(ulong sys, Regs* r) {
         t.regs.rsi = r.rcx;
         t.regs.rdx = r.r8;
         t.regs.rsp = r.r9;
-        current.sleepgen += 999;
-        printk("rip: {*}", t.regs.rip);
         memcpy(cast(byte*)t.tag.ptr, cast(immutable byte*)"new-thread\x00".ptr, 5);
 
         target_vm.rc++;
@@ -134,6 +146,17 @@ void syscall_handler(ulong sys, Regs* r) {
             printk("[user] warn: etype while handling KeGetMemObjectSize!");
             r.rax = -error.ETYPE;
         }
+    } else if (sys == 0x12) {
+        Obj* o = su_get_handle(r.rdi);
+        if (o != getnull()) {
+            // note: handle must be < 512 because su_get_handle checks bounds.
+            // TODO: this may be racy if a thread on another core changes thread regs here.
+            ulong handle = su_unoffset_handle(r.rdi);
+
+            o.release();
+            (*current.handles)[handle] = null;
+        }
+        r.rax = 0;
     } else if (sys == 0x14) {
         if (r.rdi > 512) r.rax = ObjType.nullobj;
         else if ((*current.handles)[r.rdi] == null) r.rax = ObjType.nullobj;
@@ -241,15 +264,30 @@ void syscall_handler(ulong sys, Regs* r) {
     } else if (sys == 0x29) {
         current.vm.copy_into(r.rdx, cast(void*)virt(r.rdi), r.rsi);
         r.rax = 0;
+    } else if (sys == 0x2b) {
+        //KeInvoke(chan, msg) -> ret
+        Obj* chan_map = su_get_handle(r.rdi);
+        Obj* msg = su_get_handle(r.rsi);
+        if (chan_map.type != ObjType.chan) { r.rax = -error.ETYPE; return; }
+
+        Chan* chan = cast(Chan*)chan_map;
+
+        bool wake = false; Obj* result;
+        chan.enqueueInvoke(msg, &wake, &result);
+
+        while (!wake) {
+            current.sleepgen = system_sleep_gen + 1;
+            asm { int 0xfe; }
+        }
+
+        su_register_handle(r, result);
     } else if (sys == 0x2c) {
 		while (true) {
 			foreach (i; 0 .. r.rsi) {
-				printk("KePoll is checking chan{}", i);
 				ulong hpointer = r.rdi + i * 16;
 				ulong handle;
 				current.vm.copy_out_of(hpointer, &handle, 8);
 	
-				printk(" h: {}", handle);
 				Obj* h = su_get_handle(handle);
 				if (h.type != ObjType.chan) {
 					assert(false, "incorrect handle and errors are not implemented yet");

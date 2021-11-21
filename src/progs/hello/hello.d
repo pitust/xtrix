@@ -18,9 +18,22 @@ module progs.hello.hello;
 
 import libxtrix.io;
 import libxtrix.syscall;
+import libsrpc.rpc_server;
 import libxtrix.libc.malloc;
+import progs.init.init_srpc;
+
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
 extern (C) void _start() {
-	asm { a: jmp a; }
+	printf("hello: welcome to process 2!");
+	InitSRPC* rpc = connect!(InitSRPC)(0x1314d0deda64c37a);
+	printf("(hello) rpc time!");
+	rpc.hello();
+	printf("value: {}", rpc.get());
+	printf("value: {}", rpc.update(69));
+	printf("value: {}", rpc.update(420));
+	rpc.set(0x41414242);
+	printf("value: {x}", rpc.get());
+	rpc.set(0);
+	while (true) {}
 }

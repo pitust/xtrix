@@ -65,6 +65,10 @@ isr_common:
     pop rdx
     pop rcx
     pop rbx
+    ; make damn sure the tlb is okay
+    mov rax, cr3
+    mov cr3, rax
+    ; and continue with the pops
     pop rax
     pop rbp
     add rsp, 16 ; error code and the isr

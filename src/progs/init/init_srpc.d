@@ -6,6 +6,7 @@ import libsrpc.rpc_server;
 
 struct InitSRPC {
     this() @disable;
+    void close();
     void hello();
     ulong get();
     void set(ulong val);
@@ -23,7 +24,7 @@ struct srpc_impl {
 
 void rpc_publish() {
     srpc_impl* impl = alloc!(srpc_impl)();
-    RPCListener l = publish_srpc!(InitSRPC)("init_srpc", impl);
+    RPCListener l = publish_srpc!(InitSRPC)(impl);
 	l.attach(0x1314d0deda64c37a);
 	l.loop();
 }

@@ -141,3 +141,61 @@ void __broken_c_free() { assert(false, "cannot free: kernel has a broken c free.
 
 private extern(C) pragma(mangle, "malloc")
 void __broken_c_malloc() { assert(false, "cannot malloc: kernel has a broken c malloc."); }
+
+private __gshared bool cptop = false;
+private __gshared ulong[256] kpages;
+
+private ulong* get_ptr_ptr(ulong va) {
+    import xtrm.cpu.cr3;
+
+    if (!cptop) {
+        cptop = true;
+        kernel_copy_from_cr3(&kpages);
+    }
+
+    ulong[] pte = kpages;
+    ulong va_val = va & 0x000f_ffff_ffff_f000;
+    ulong[3] va_values = [
+        ((((va_val >> 12) >> 9) >> 9) >> 9) & 0x1ff,
+        (((va_val >> 12) >> 9) >> 9) & 0x1ff,
+        ((va_val >> 12) >> 9) & 0x1ff,
+    ];
+    foreach (key; va_values) {
+        ulong ptk = pte[key];
+        if (!((ptk) & 1)) {
+            ulong new_page_table = (cast(ulong)alloc!(ubyte[4096])()) - 0xffff800000000000;
+            ptk = pte[key] = 0x07 | new_page_table;
+        }
+        
+        pte = *cast(ulong[512]*)(0xffff800000000000 + ptk & ~0xfff);
+    }
+
+    return &pte[(va_val >> 12) & 0x1ff];
+}
+
+void kmemmap(ulong va, ulong phy) {
+    import xtrm.cpu.cr3;
+
+    serial_printk("kmemmap: {*} -> {*}", va, phy);
+    *get_ptr_ptr(va) = 3 | phy;
+    kernel_copy_to_cr3(&kpages);
+}
+
+private __gshared ulong vmbase = 0xffff900000000000;
+
+ulong alloc_stack(out ulong[4] to_free) {
+    import xtrm.util;
+    ulong saddr = vmbase;
+
+    foreach (i; 0 .. 4) {
+        ulong phy = cast(ulong)phys(allocate_on_pool(ppage));
+        kmemmap(vmbase, phy);
+        vmbase += 0x1000;
+        to_free[i] = phy;
+    }
+    vmbase += 0x4000;
+    return saddr;
+}
+void release_stack(ulong[4] to_free) {
+    printk("todo: freeing stacks is probably important.");
+}

@@ -24,7 +24,8 @@ enum error : long {
 	ENOSYS = -3,
     EAGAIN = -4,
     EFAULT = -5,
-    EINVAL = -6
+    EINVAL = -6,
+    ESTALE = -9999
 }
 
 // the enumeration is a contract with the kernel.
@@ -76,6 +77,10 @@ struct XHandle {
 	ref XHandle aok(string file = __FILE__, int line = __LINE__)(string assertion = "Expected valid handle") {
 		if (isError) __assert(assertion.ptr, file.ptr, line);
 		return this;
+	}
+	void release() {
+		KeDeleteObject(this);
+		this.err = error.ESTALE;
 	}
 }
 
@@ -276,6 +281,18 @@ error KeReadPhysicalMemory(ulong addr, ulong size, void* outaddr) {
 	}
 	return r;
 }
+XHandle KeInvoke(XHandle chan, XHandle msg) {
+	long ret;
+	ulong chanh = chan.getHandle;
+	ulong msgh = msg.getHandle;
+	asm {
+		mov RDI, chanh;
+		mov RSI, msgh;
+		int 0x3b;
+		mov ret, RAX;
+	}
+	return long2handle(ret);
+}
 XHandle KeCreateKeyedChannel(ulong key) {
 	long res;
 	asm {
@@ -284,6 +301,13 @@ XHandle KeCreateKeyedChannel(ulong key) {
 		mov res, RAX;
 	}
 	return long2handle(res);
+}
+void KeDeleteObject(XHandle to_be_deleted) {
+	ulong a = to_be_deleted.getHandle;
+	asm {
+		mov RDI, a;
+		int 0x22;
+	}
 }
 error KeRespond(XHandle resulter, XHandle response) {
 	ulong a = resulter.getHandle, b = response.getHandle;

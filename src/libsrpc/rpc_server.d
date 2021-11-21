@@ -71,23 +71,18 @@ private struct DispatcherWrap(Disp, Tplt, string item) {
     }
 }
 
-RPCListener publish_srpc(Template, Dispatch)(string name, Dispatch* disp) {
+RPCListener publish_srpc(Template, Dispatch)(Dispatch* disp) {
     // checks
     static assert(!__traits(compiles, Template()),
-        "Type " ~ Template.stringof ~ " must have a disabled constructor because it is not described correctly by it's members");
-
-    // bind class members to RPC
-    static foreach (mname; __traits(allMembers, Template)) {{
-        // the cast void and borrow is needed for ldc2 to keep the instantion in
-        // the instantion is not side-effect-free as it provides linker symbols.
-        cast(void)&boundpanic!(Template, mname);
-    }}
+        "Type " ~ Template.stringof ~ " must have a disabled constructor because it is not described correctly by its members");
 
     RPCListener l = RPCListener.init;
     static foreach (mname; __traits(allMembers, Template)) {{
-    	static if (!(mname[0] == '_' && mname[1] == '_')) {
-			RPCEndpoint del = &alloc!(DispatcherWrap!(Dispatch, Template, mname))(disp).wrap;
-			l.endpoints[mname] = del;
+    	static if (mname != "close") {
+	    	static if (!(mname[0] == '_' && mname[1] == '_')) {
+				RPCEndpoint del = &alloc!(DispatcherWrap!(Dispatch, Template, mname))(disp).wrap;
+				l.endpoints[mname] = del;
+			}
 		}
     }}
 
@@ -104,20 +99,76 @@ string mangled_fn_name(Obj, string fn)() {
     return k5;
 }
 
-template boundpanic(Obj, string fn) {
+private void hydrate(T)() {
+    // bind class members to RPC
+    static assert(!__traits(compiles, T()),
+        "Type " ~ T.stringof ~ " must have a disabled constructor because it is not described correctly by it's members");
+    static assert(__traits(hasMember, T, "close"),
+        "Type " ~ T.stringof ~ " must have a close method!");
+
+    static foreach (mname; __traits(allMembers, T)) {{
+    	static if (mname[0..2] != "__") {
+	        // the cast void and borrow is needed for ldc2 to keep the instantion in.
+	        // the instantion is not side-effect-free as it provides linker symbols.
+	        cast(void)&bind_to!(T, mname);
+	    }
+    }}
+}
+
+enum SRPC_CHAN = 0x737270636368616e;
+enum SRPC_FIND = 0x7372706366696e64;
+
+struct SRPCDispatchTarget {
+	ulong magic;
+	XHandle handle;
+}
+
+T* connect(T)(ulong id) {
+	hydrate!(T)();
+	XHandle h = KeCreateKeyedChannel(id);
+	SRPCDispatchTarget* target = cast(SRPCDispatchTarget*)malloc(SRPCDispatchTarget.sizeof);
+	target.magic = SRPC_CHAN;
+	target.handle = h.aok("Unable to attach to an srpc invoke channel");
+	return cast(T*)target;
+}
+
+T* connect(T)(string target) {
+    InitServerConn* conn = connect!InitServerConn(SRPC_FIND);
+    ulong id = conn.id(target);
+    conn.close();
+    return connect!(T)(id);
+}
+
+template bind_to(Obj, string fn) {
     alias target_fn = __traits(getMember, Obj, fn);
 
     pragma(mangle, mangled_fn_name!(Obj, fn)()) extern(C)
-    ReturnType!target_fn boundpanic(Obj* the_this, Parameters!target_fn args) {
-        ByteBuffer omessage;
-        omessage << encode(fn);
-        static foreach (arg; args) {{
-            omessage << encode(arg);
-        }}
+    ReturnType!target_fn bind_to(Obj* the_this, Parameters!target_fn args) {
+    	static if (fn == "close") {
+    		assert(false, "todo: close channels");
+    	} else {
+    		SRPCDispatchTarget* cast_this = cast(SRPCDispatchTarget*)the_this;
+	    	assert(the_this, "this is null on SRPC method " ~ Obj.stringof ~ "." ~ fn);
+    		assert(cast_this.magic == SRPC_CHAN, "Invalid magic for the conn.");
+	        ByteBuffer omessage;
+	        omessage << encode(fn);
+	        static foreach (arg; args) {{
+	            omessage << encode(arg);
+	        }}
 
-        foreach (i; 0 .. omessage.size) {
-            printf("i: {x}", omessage.data[i]);
-        }
-        assert(false, "Binding assert to " ~ fn ~ " success!");
+	        foreach (i; 0 .. omessage.size) {
+	            printf("i: {x}", omessage.data[i]);
+	        }
+	        XHandle mr = KeAllocateMemRefObject(omessage.data, omessage.size).aok("Cannot create message!");
+	        XHandle result = KeInvoke(cast_this.handle, mr).aok("Remote procedure invocation failed.");
+	        mr.release();
+	        if (result.type_of() != type.memref) assert(false, "Remote procedure invocation did not return a memref.");
+	        ulong rsize = KeGetMemObjectSize(result);
+	        void* data = malloc(rsize);
+	        assert_success(KeReadMemory(result, 0, rsize, data));
+	        result.release();
+
+	        assert(false, "RPC: todo invoke " ~ fn ~ "!");
+	    }
     }
 }
