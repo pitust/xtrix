@@ -31,34 +31,7 @@ struct StivaleStruct {
 }
 
 extern (C) void _start(ulong phy_stivale2_structure) {
-    StivaleStruct s;
-    assert_success(KeReadPhysicalMemory(phy_stivale2_structure, StivaleStruct.sizeof, &s));
-    phy modp = s.modules;
-    foreach (i; 0..s.module_count) {
-        StivaleModule mod;
-        assert_success(KeReadPhysicalMemory(cast(ulong)modp, StivaleModule.sizeof, &mod));
-        printf("module: {}", mod.name);
-        modp = mod.next;
-    	if (mod.name[0 .. 4] == "init" && mod.name[4] == 0) continue;
-        if (mod.name[0 .. 4] == "font" && mod.name[4] == 0) continue;
-		printf("Starting init binary {}!", mod.name.ptr);
-		XHandle s2m = KeReadPhysicalMemory(mod.begin, mod.end-mod.begin).aok("mod load failed");
-		XHandle vm = KeCreateVM().aok("creating virtual address space failed.");
-		long ent = KeLoadELF(vm, s2m);
-		if (ent>>63) {
-            printf("cannot load module {}, elf load failed", mod.name.ptr);
-            assert(false, "ELF loader failed.");
-        }
-		enum STACK_SIZE = 0x4000;
-		XHandle stack = KeAllocateMemoryObject(STACK_SIZE);
-		assert_success(KeMapMemory(vm, 0xfe0000000, stack));
-		KeCreateThread(vm, ent, 0, 0, 0, 0xfe0000000 + STACK_SIZE).release();
-        printf("started {}", mod.name.ptr);
-
-        s2m.release(); vm.release();
-	}
-
-    rpc_publish();
-    assert(false, "RPC died :(");
+    printf("Hello, world!");
+    while (1) {}
 }
 

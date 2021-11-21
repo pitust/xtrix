@@ -26,7 +26,7 @@ private __gshared char printmode = ' ';
 private void putch(char c) {
 	if (c == 0) return;
 	if (c == '\n') {
-		KeLog(printf_buffer.ptr, printf_buf_offset);
+		sys_dbglog(printf_buffer.ptr, printf_buf_offset);
 		printf_buf_offset = 0;
 	} else {
 		printf_buffer[printf_buf_offset++] = c;

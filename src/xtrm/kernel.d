@@ -123,7 +123,7 @@ extern (C) void kmain(StivaleStruct* struc) {
     Thread* t = alloc!Thread;
     t.rsp0 = alloc!(ubyte[4096])();
     t.vm = alloc!VM;
-    t.vm.vme = alloc!(VMEntry[256]);
+    t.vm.entries = alloc!(Memory*[512]);
     t.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
 
     ulong e_entry = load_elf(t.vm, cast(ulong)init.begin, init.end-init.begin);

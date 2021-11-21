@@ -42,8 +42,7 @@ private ulong addSliceToBucket(ulong maxsz, ulong csz, ulong base) {
 }
 
 private void addToBucket(ulong bindex) {
-    XHandle mo = KeAllocateMemoryObject(4096);
-    KeMapMemory(mo, bucketbase);
+    sys_mmap(bucketbase, 4096);
     ulong addr = bucketbase;
     bucketbase += 4096;
     ulong csize = 4096;
@@ -67,8 +66,7 @@ extern(C) void* malloc(ulong size) {
             if (maskPointer > top_sizemap_paged_address) {
                 assert(maskPointer - 4096 <= top_sizemap_paged_address,
                     "The malloc failed; top sizemap paged address is wayyyy below the mask ptr");
-                XHandle h = KeAllocateMemoryObject(4096);
-                KeMapMemory(h, top_sizemap_paged_address);
+                sys_mmap(top_sizemap_paged_address, 4096);
                 top_sizemap_paged_address += 4096;
             }
             (cast(ubyte*)maskPointer)[0] = cast(ubyte)idx;

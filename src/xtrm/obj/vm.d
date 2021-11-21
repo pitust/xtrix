@@ -26,19 +26,10 @@ import xtrm.user.sched;
 
 __gshared bool isDoingUserCopy = false;
 
-struct VMEntry {
-    ulong addr; Memory* mem;
-
-    bool contains(ulong va) {
-        if (va < addr) return false;
-        if (va >= addr + (mem.pgCount << 12)) return false;
-        return true;
-    }
-}
 struct VM {
     Obj obj = Obj(ObjType.vm); alias obj this;
     ulong[256]* lowhalf;
-    VMEntry[256]* vme;
+    Memory*[512]* entries;
     ulong vme_count = 0;
 
     private ulong* get_ptr_ptr(ulong va) {
@@ -66,23 +57,13 @@ struct VM {
 
     // lifetime(phy): phy is owned by the caller
     void map(ulong va, Memory* phy) {
-        (*vme)[vme_count++] = VMEntry(va, phy);
+        (*entries)[vme_count++] = phy;
         phy.rc += 1;
         foreach (i; 0 .. phy.pgCount) {
             ulong phyaddr = phys((*phy.pages)[i]);
             serial_printk("map: {*} -> {*}", va + (i << 12), phyaddr);
             *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
         }
-    }
-    // lifetime(returned value): returned value is owned by the virtual memory object
-    Memory* region_for(ulong va, out ulong offset) {
-        foreach (i; 0 .. vme_count) {
-            if ((*vme)[i].contains(va)) {
-                offset = va - (*vme)[i].addr;
-                return (*vme)[i].mem;
-            }
-        }
-        return null;
     }
     void copy_into(ulong va, const(void)* data, ulong count) {
         copy_from_cr3(current.vm.lowhalf);

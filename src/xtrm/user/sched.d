@@ -22,6 +22,7 @@ import xtrm.cpu.cr3;
 import xtrm.obj.obj;
 import xtrm.obj.vm;
 import xtrm.obj.thread;
+import xtrm.obj.memory;
 import xtrm.interrupt.regs;
 
 __gshared ulong system_sleep_gen = 0;
@@ -40,7 +41,7 @@ void init_sched() {
     _cur.thr = alloc!Thread;
     _cur.next = _cur;
     _cur.vm = alloc!VM;
-    _cur.vm.vme = alloc!(VMEntry[256]);
+    _cur.vm.entries = alloc!(Memory*[512]);
     _cur.vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
     _cur.handles = alloc!(Obj*[512])();
     _cur.rsp0 = alloc!(ubyte[4096])();
