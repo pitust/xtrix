@@ -6,6 +6,7 @@
      - (00) sys_dbglog(len, str*)
      - (01) sys_mmap(addr, len)
      - (02) sys_phymap(phy, virt, len)
+       - phymaps are discarded on fork
      - (13) sys_phyread(phy, virt, len)
        - special value `0x6b7a0db87ad4d3c1` specifies to read the stivale2 structure.
      - IPC stuff

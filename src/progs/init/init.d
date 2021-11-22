@@ -45,16 +45,17 @@ extern(C) int main(string[] args) {
         if (mod_desc.name[0..5] != "font\x00" && mod_desc.name[0..5] != "init\x00") {
             printf(" + {}", mod_desc.name.ptr);
             ulong size =  (mod_desc.end - mod_desc.begin + 4095) & ~0xfff;
-            sys_phymap(mod_desc.begin, addr, size);
-            anoerr("sys_phymap");
 
             if (!sys_fork()) {
-                // anoerr("sys_fork");
-                // char*[2] argv;
-                // argv[0] = mod_desc.name.ptr;
-                // sys_rawexec(cast(void*)addr, size, 1, argv.ptr);
-                // assert(false, "failed to exec!");
                 printf("child...");
+                anoerr("sys_fork");
+                sys_phymap(mod_desc.begin, addr, size);
+                anoerr("sys_phymap");
+                char*[2] argv;
+                argv[0] = mod_desc.name.ptr;
+                sys_rawexec(cast(void*)addr, size, 1, argv.ptr);
+                anoerr("sys_rawexec");
+                assert(false, "failed to exec!");
             } else {
                 // addr += size;
                 printf("parent...");

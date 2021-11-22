@@ -34,7 +34,7 @@ private struct Pool {
     }
 }
 
-private __gshared Pool ppage = Pool(4096), plarge = Pool(256), psmol = Pool(256), pquad = Pool(16);
+private __gshared Pool ppage = Pool(4096), plarge = Pool(256), psmol = Pool(64), pquad = Pool(16);
 
 Pool* get_pool(string name) {
     if (name == "pool/page") return &ppage;

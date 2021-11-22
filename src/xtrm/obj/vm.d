@@ -58,7 +58,6 @@ struct VM {
         }
         
         ulong* ptr = &pte[(va_val >> 12) & 0x1ff];
-        printk("map va {x} to pte at {x}", va, cast(ulong)ptr);
         return ptr;
     }
 

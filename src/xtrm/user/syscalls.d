@@ -70,10 +70,9 @@ void syscall_handler(ulong sys, Regs* r) {
             nt.regs.rax = 0;
             nt.regs.rip += 2;
             memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
-            memcpy(cast(byte*)&nt.tag[7], cast(byte*)&current.tag, 4096 - 7);
+            memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
             r.rax = 69;
             create_thread(nt);
-
             break;
         }
         //     sys_exec(elfptr, elfsz, argc, argv)

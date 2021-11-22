@@ -34,7 +34,7 @@ import xtrm.interrupt.regs;
 import xtrm.interrupt.idt;
 import xtrm.interrupt.lapic;
 
-enum BORDER = 12;
+enum BORDER = 16;
 enum BORDERx2 = BORDER * 2;
 enum BORDERx4 = BORDER * 4;
 
