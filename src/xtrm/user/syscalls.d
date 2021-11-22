@@ -75,14 +75,62 @@ void syscall_handler(ulong sys, Regs* r) {
             create_thread(nt);
             break;
         }
-        //     sys_exec(elfptr, elfsz, argc, argv)
-        //     ulong elfptr = r.rdi; ulong elfsz = r.rsi; ulong argc = r.rdx; ulong argv = r.rdx;
+		case 0x11: {
+		//     sys_exec(elfptr, elfsz, argc, argv)
+             ulong elfptr = r.rdi; ulong elfsz = r.rsi; ulong argc = r.rdx; ulong argv = r.rcx;
+			
+			VM* vm = current.vm;
+			char[256]*[16] argvd;
+			foreach (i; 0 .. argc) {
+				char[256]* c = argvd[i] = alloc!(char[256]);
+				char* str = (*c).ptr;
+				ulong pointer = argv + i * 8;
+				vm.copy_out_of(pointer, &pointer, 8);
+				printk("argv={*} argv[{}]={*}", argv + i * 8, i, pointer);
+				vm.copy_out_of(pointer, str, 256);
+			}
+			
+			printk("elf: {x} bytes", elfsz);
+			if (elfsz > (1 << 20)) {
+				assert(false, "ELF max size is 2mb");
+			}
+			vm.copy_out_of(elfptr, cast(void*)virt(eslab), elfsz);
+			vm.die();
+			free(vm);
+			vm = alloc!VM;
+            vm.entries = alloc!(VMEntry[256]);
+            vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+			memset(cast(byte*)vm.lowhalf.ptr, 0, 2048);
+			ulong e_entry = load_elf(vm, eslab, elfsz);
+			current.vm = vm;
+			current.regs = Regs();
+			
+			enum STACK_SIZE = 0x4000;
+			Memory* stack = Memory.allocate(STACK_SIZE);
+			vm.map(0xfe0000000, stack);
+			current.regs.rip = e_entry;
+			current.regs.cs = 0x1b;
+			current.regs.flags = 0x200;
+			current.regs.ss = 0x23;
+			current.regs.rsp = 0xfe0000000 + STACK_SIZE;
+			*r = current.regs;
+			copy_to_cr3(vm.lowhalf);
 
-        //     curre
-        //     break;
-        // }
-        //     break;
-        // }
+			memcpy(cast(byte*)current.tag.ptr, cast(const byte*)"<unnamed>", 10); 
+
+			foreach (i; 0 .. argc) {
+				printk("todo: set arg{} to `{}`", i, (*argvd[i]).ptr);
+				if (i == 0) {
+					char* str = (*argvd[i]).ptr;
+					char* so = current.tag.ptr;
+					while (*str) { *so++ = *str++; }
+					*so = 0;
+				}
+				free(argvd[i]);
+			}
+
+			break;
+        }
         case 0x13: {
             ulong phy = r.rdi; ulong vaddr = r.rsi; ulong len = r.rdx;
             if (phy == 0x6b7a0db87ad4d3c1) phy = saddr;

@@ -131,7 +131,7 @@ extern (C) void kmain(StivaleStruct* struc) {
 
 	enum STACK_SIZE = 0x4000;
 	Memory* stack = Memory.allocate(STACK_SIZE);
-    t.vm.map(0xfe0000000, stack);
+    t.vm.map(0xf_e000_0000, stack);
     r.rip = e_entry;
     r.rdi = cast(ulong)cast(uint)struc;
     r.rsp = 0xfe0000000 + STACK_SIZE;

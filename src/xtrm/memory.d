@@ -126,8 +126,9 @@ void free(T)(T* data) {
     free(T.sizeof, cast(void*)data);
 }
 void free(ulong count, void* data) {
-    if (count == 4096) assert(false,"todo: release pages.");
-    if (count > 64) {
+	if (count == 4096 || count == 2048) {
+		add_to_pool(ppage, data);
+	} else if (count > 64) {
         assert(count <= 256, "Cannot free this much bytes!");
         add_to_pool(plarge, data);
     } else {

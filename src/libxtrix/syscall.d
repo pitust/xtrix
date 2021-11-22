@@ -99,7 +99,7 @@ long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
     long r;
     asm {
         mov RDI, elfptr;
-        mov RSI, elfptr;
+        mov RSI, elfsz;
         mov RDX, argc;
         mov RCX, argv;
         int 0x21;

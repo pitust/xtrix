@@ -4,3 +4,4 @@
 [submodule "phobos"]
 	path = phobos
 	url = https://github.com/dlang/phobos
+	branch = v2.094.0

@@ -106,4 +106,10 @@ struct VM {
         }
         isDoingUserCopy = false;
     }
+	void die() {
+		printk("todo: vm: full death");
+		free(entries);
+		free(lowhalf);
+		entries = null; lowhalf = null;
+	}
 }
