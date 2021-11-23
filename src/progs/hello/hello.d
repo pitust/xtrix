@@ -28,7 +28,7 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("hello: welcome to process 2! argc={}", argc);
 	foreach (i; 0 .. argc) {
-		printf("argv[{}] = {*}", i, cast(ulong)argv[i]);
+		printf("argv[{}] = {*}", i, argv[i]);
 	}
 	// InitSRPC* rpc = connect!(InitSRPC)(0x1314d0deda64c37a);
 	// printf("(hello) rpc time!");
@@ -39,7 +39,5 @@ int _main(ulong argc, char** argv) {
 	// rpc.set(0x41414242);
 	// printf("value: {x}", rpc.get());
 	// rpc.set(0);
-	while (true) {
-		asm { rep; nop; }
-	}
+	return 0;
 }
