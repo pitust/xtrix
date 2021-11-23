@@ -86,7 +86,6 @@ void syscall_handler(ulong sys, Regs* r) {
 				char* str = (*c).ptr;
 				ulong pointer = argv + i * 8;
 				vm.copy_out_of(pointer, &pointer, 8);
-				printk("argv={*} argv[{}]={*}", argv + i * 8, i, pointer);
 				vm.copy_out_of(pointer, str, 256);
 			}
 			
@@ -103,7 +102,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			memset(cast(byte*)vm.lowhalf.ptr, 0, 2048);
 			ulong e_entry = load_elf(vm, eslab, elfsz);
 			current.vm = vm;
-			current.regs = Regs();
+			memset(cast(byte*)&current.regs, 0, Regs.sizeof);
 			
 			enum STACK_SIZE = 0x4000;
 			Memory* stack = Memory.allocate(STACK_SIZE);
@@ -113,11 +112,13 @@ void syscall_handler(ulong sys, Regs* r) {
 			current.regs.flags = 0x200;
 			current.regs.ss = 0x23;
 			current.regs.rsp = 0xfe0000000 + STACK_SIZE;
-			*r = current.regs;
+            current.regs.rip -= 2;
 			copy_to_cr3(vm.lowhalf);
 
 			memcpy(cast(byte*)current.tag.ptr, cast(const byte*)"<unnamed>", 10); 
 
+            ulong argvp = (current.regs.rsp -= argc * 8);
+            printk("avp: {*}", argvp);
 			foreach (i; 0 .. argc) {
 				printk("todo: set arg{} to `{}`", i, (*argvd[i]).ptr);
 				if (i == 0) {
@@ -126,8 +127,20 @@ void syscall_handler(ulong sys, Regs* r) {
 					while (*str) { *so++ = *str++; }
 					*so = 0;
 				}
+                ulong len = strlen((*argvd[i]).ptr);
+                current.regs.rsp -= len + 1;
+                (*argvd[i]).ptr[len] = 0;
+                vm.copy_into(current.regs.rsp, (*argvd[i]).ptr, len + 1);
+                ulong ptr = current.regs.rsp;
+                vm.copy_into(argvp + i * 8, &ptr, 8);
+                
 				free(argvd[i]);
 			}
+            current.regs.rsp -= current.regs.rsp & 0x0f;
+            current.regs.rsp -= 0x10;
+            current.regs.rdi = argc;
+            current.regs.rsi = argvp;
+			*r = current.regs;
 
 			break;
         }

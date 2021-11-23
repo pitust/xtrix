@@ -45,3 +45,8 @@ extern(C) bool strisequal(const(char)* left, const(char)* right) {
     while (*left && *right && *left == *right) { left++; right++; }
     return *left == *right;
 }
+extern(C) ulong strlen(const(char)* str) {
+    ulong len = 0;
+    while (*str++) len++;
+    return len;
+}

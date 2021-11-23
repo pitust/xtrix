@@ -37,6 +37,12 @@ extern(C) void interrupt_handler(Regs* r) {
 		}
 		printk("cr2: {*}", cr2);
         printk("flags: {x}", r.flags);
+        printk("rsp: {x}", r.rsp);
+        static foreach (field; __traits(allMembers, Regs)) {{
+            long dist = cast(long)__traits(getMember, r, field) - cast(long)cr2;
+            if (dist < 0) dist = -dist;
+            if (dist < 0x1000) printk(field~": {*}", __traits(getMember, r, field));
+        }}
         printk("error: {x}", r.error);
         printk("thread: `{}`", current.tag.ptr);
 		printk("is doing user copy: {}", isDoingUserCopy);

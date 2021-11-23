@@ -35,7 +35,7 @@ void sys_dbglog(const char* str, ulong length) {
         int 0x10;
     }
 }
-void sys_dbglog(string str) {
+void sys_dbglog(const char[] str) {
 	sys_dbglog(str.ptr, str.length);
 }
 
@@ -112,10 +112,10 @@ long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
 
 
 pragma(mangle, "main")
-private extern(C) void target_main(ulong argc, ulong argv);
+private extern(C) void target_main(ulong argc, char** argv);
 
-extern(C) void _start() {
+extern(C) void _start(ulong argc, char** argv) {
     sys_dbglog("_start!");
-    target_main(0, 0);
+    target_main(argc, argv);
     while(1) {}
 }
