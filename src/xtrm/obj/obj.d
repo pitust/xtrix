@@ -33,14 +33,7 @@ enum ObjType {
 
 struct Obj {
     ObjType type;
-    ulong rc = 1;
-
-    void release() {
-        rc--;
-        if (rc == 0) {
-            printk("[obj] should release a kernel object!");
-        }
-    }
+    ulong rc = 0;
 }
 private __gshared Obj _nullobj = Obj(ObjType.nullobj, 999999999);
 

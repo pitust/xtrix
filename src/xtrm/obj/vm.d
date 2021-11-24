@@ -35,13 +35,15 @@ struct VM {
     Obj obj = Obj(ObjType.vm); alias obj this;
     ulong[256]* lowhalf;
     VMEntry[256]* entries;
-    ulong vme_count = 0;
+    ulong[512]* owned_pages;
+    ulong vme_count = 0, owned_count = 0;
     bool did_init_correctly = false;
 
     void do_init() {
         did_init_correctly = true;
         entries = alloc!(VMEntry[256]);
         lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+        owned_pages = alloc!(ulong[512]);
     }
 
     private ulong* get_ptr_ptr(ulong va) {
@@ -58,8 +60,9 @@ struct VM {
         foreach (key; va_values) {
             ulong ptk = pte[key];
             if (!((ptk) & 1)) {
-                ulong new_page_table = (cast(ulong)alloc!(ubyte[4096])()) - 0xffff800000000000;
+                ulong new_page_table = phys(cast(ulong)alloc!(ubyte[4096])());
                 ptk = pte[key] = 0x07 | new_page_table;
+                (*owned_pages)[owned_count++] = phys(new_page_table);
             }
             
             pte = *cast(ulong[512]*)(0xffff800000000000 + ptk & ~0xfff);
@@ -125,9 +128,17 @@ struct VM {
         isDoingUserCopy = false;
     }
 	void die() {
-		printk("todo: vm: full death");
+        foreach (i; 0 .. vme_count) {
+            VMEntry ent = (*entries)[i];
+            ent.ptr.unref();
+        }
+        foreach (i; 0 .. owned_count) {
+            free(cast(ubyte[4096]*)virt((*owned_pages)[i]));
+        }
 		free(entries);
 		free(lowhalf);
-		entries = null; lowhalf = null;
+		free(owned_pages);
+		entries = null; lowhalf = null; owned_pages = null;
+        did_init_correctly = false;
 	}
 }

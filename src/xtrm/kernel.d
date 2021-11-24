@@ -136,7 +136,6 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.rdi = cast(ulong)cast(uint)struc;
     r.rsp = 0xfe0000000 + STACK_SIZE;
     memcpy(cast(byte*)t.tag.ptr, cast(const byte*)"init\x00".ptr, 5);
-    stack.release();
 
     t.regs = r;
 

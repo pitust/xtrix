@@ -39,7 +39,7 @@ enum error : long {
 }
 
 __gshared char[8192] ke_log_buffer;
-__gshared ulong pid_start = 2;
+__gshared ulong pid_start = 1;
 
 void syscall_handler(ulong sys, Regs* r) {
     r.rax = -9999;
@@ -90,7 +90,6 @@ void syscall_handler(ulong sys, Regs* r) {
 				vm.copy_out_of(pointer, str, 256);
 			}
 			
-			printk("elf: {x} bytes", elfsz);
 			if (elfsz > (1 << 20)) {
 				assert(false, "ELF max size is 2mb");
 			}

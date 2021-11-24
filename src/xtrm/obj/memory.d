@@ -76,93 +76,102 @@ struct Memory {
     void write16(ulong offset, ushort value) {
         write(offset, *cast(ubyte[2]*)&value);
     }
-}
-
-struct MemRef {
-    Obj obj = Obj(ObjType.memref); alias obj this;
-    ulong size;
-    ulong pagecnt;
-    ulong[32]* pages;
-
-    // lifetime(returned value): returned value is owned by the caller
-    static MemRef* allocate(ulong size) {
-        MemRef* m = alloc!(MemRef)();
-        m.size = size;
-        size = (size + 4095) & ~0xfff;
-        m.pagecnt = size >> 12;
-        m.pages = alloc!(ulong[32])();
-        foreach (i; 0 .. ((size) >> 12)) {
-            (*m.pages)[i] = phys(cast(ulong) allocate_on_pool(*get_pool("pool/page")));
-        }
-
-        return m;
-    }
-    ref ubyte opIndex(ulong off) {
-        ulong page = off >> 12;
-        ulong pageoff = off & 0xfff;
-        return *cast(ubyte*)virt((*pages)[page] + pageoff);
-    }
-
-    void copy_to_user_address(ulong va) {
-        foreach (p; 0 .. pagecnt) {
-            ulong data = virt((*pages)[p]);
-            ulong cnt = 4096;
-            if (p == pagecnt - 1) cnt = size & 0xfff;
-            isDoingUserCopy = true;
-            asm {
-                mov RDI, va;
-                mov RSI, data;
-                mov RCX, cnt;
-                rep; movsb;
+    void unref() {
+        rc--;
+        if (rc == 0) {
+            foreach (i; 0 .. pgCount) {
+                add_to_pool(*get_pool("pool/page"), cast(void*)virt((*pages)[i]));
             }
-            isDoingUserCopy = false;
-            va += 4096;
-        }
-    }
-    void copy_from_user_address(ulong va) {
-        foreach (p; 0 .. pagecnt) {
-            ulong data = virt((*pages)[p]);
-            ulong cnt = 4096;
-            if (p == pagecnt - 1) cnt = size & 0xfff;
-            isDoingUserCopy = true;
-            asm {
-                mov RSI, va;
-                mov RDI, data;
-                mov RCX, cnt;
-                rep; movsb;
-            }
-            isDoingUserCopy = false;
-            va += 4096;
-        }
-    }
-    void copy_from_phy(ulong phy) {
-        ulong va = virt(phy);
-        foreach (p; 0 .. pagecnt) {
-            ulong data = virt((*pages)[p]);
-            ulong cnt = 4096;
-            if (p == pagecnt - 1) cnt = size & 0xfff;
-            asm {
-                mov RSI, va;
-                mov RDI, data;
-                mov RCX, cnt;
-                rep; movsb;
-            }
-            va += 4096;
-        }
-    }
-    void copy_to_phy(ulong phy) {
-        ulong va = virt(phy);
-        foreach (p; 0 .. pagecnt) {
-            ulong data = virt((*pages)[p]);
-            ulong cnt = 4096;
-            if (p == pagecnt - 1) cnt = size & 0xfff;
-            asm {
-                mov RDI, va;
-                mov RSI, data;
-                mov RCX, cnt;
-                rep; movsb;
-            }
-            va += 4096;
+            free(pages);
         }
     }
 }
+
+// struct MemRef {
+//     Obj obj = Obj(ObjType.memref); alias obj this;
+//     ulong size;
+//     ulong pagecnt;
+//     ulong[32]* pages;
+
+//     // lifetime(returned value): returned value is owned by the caller
+//     static MemRef* allocate(ulong size) {
+//         MemRef* m = alloc!(MemRef)();
+//         m.size = size;
+//         size = (size + 4095) & ~0xfff;
+//         m.pagecnt = size >> 12;
+//         m.pages = alloc!(ulong[32])();
+//         foreach (i; 0 .. ((size) >> 12)) {
+//             (*m.pages)[i] = phys(cast(ulong) allocate_on_pool(*get_pool("pool/page")));
+//         }
+
+//         return m;
+//     }
+//     ref ubyte opIndex(ulong off) {
+//         ulong page = off >> 12;
+//         ulong pageoff = off & 0xfff;
+//         return *cast(ubyte*)virt((*pages)[page] + pageoff);
+//     }
+
+//     void copy_to_user_address(ulong va) {
+//         foreach (p; 0 .. pagecnt) {
+//             ulong data = virt((*pages)[p]);
+//             ulong cnt = 4096;
+//             if (p == pagecnt - 1) cnt = size & 0xfff;
+//             isDoingUserCopy = true;
+//             asm {
+//                 mov RDI, va;
+//                 mov RSI, data;
+//                 mov RCX, cnt;
+//                 rep; movsb;
+//             }
+//             isDoingUserCopy = false;
+//             va += 4096;
+//         }
+//     }
+//     void copy_from_user_address(ulong va) {
+//         foreach (p; 0 .. pagecnt) {
+//             ulong data = virt((*pages)[p]);
+//             ulong cnt = 4096;
+//             if (p == pagecnt - 1) cnt = size & 0xfff;
+//             isDoingUserCopy = true;
+//             asm {
+//                 mov RSI, va;
+//                 mov RDI, data;
+//                 mov RCX, cnt;
+//                 rep; movsb;
+//             }
+//             isDoingUserCopy = false;
+//             va += 4096;
+//         }
+//     }
+//     void copy_from_phy(ulong phy) {
+//         ulong va = virt(phy);
+//         foreach (p; 0 .. pagecnt) {
+//             ulong data = virt((*pages)[p]);
+//             ulong cnt = 4096;
+//             if (p == pagecnt - 1) cnt = size & 0xfff;
+//             asm {
+//                 mov RSI, va;
+//                 mov RDI, data;
+//                 mov RCX, cnt;
+//                 rep; movsb;
+//             }
+//             va += 4096;
+//         }
+//     }
+//     void copy_to_phy(ulong phy) {
+//         ulong va = virt(phy);
+//         foreach (p; 0 .. pagecnt) {
+//             ulong data = virt((*pages)[p]);
+//             ulong cnt = 4096;
+//             if (p == pagecnt - 1) cnt = size & 0xfff;
+//             asm {
+//                 mov RDI, va;
+//                 mov RSI, data;
+//                 mov RCX, cnt;
+//                 rep; movsb;
+//             }
+//             va += 4096;
+//         }
+//     }
+// }

@@ -38,7 +38,6 @@ ulong load_elf(VM* vm, ulong addr, ulong len) {
         mm.write(0, ArrayRepr!(ubyte).from(&data[p_offset], p_filesz).into());
 
         vm.map(p_vaddr, mm);
-        mm.release(); // release handle on the stack
     }
 
     return e_entry;
