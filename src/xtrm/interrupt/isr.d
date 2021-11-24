@@ -60,7 +60,9 @@ extern(C) void interrupt_handler(Regs* r) {
         sched_restore_postirq(r);
         lapic_eoi();
         // the kernel reschedules by hand and not using preemption
-        if (r.cs == 0x1b) lapic_deadline_me();
+        if (r.cs == 0x1b) {
+            lapic_deadline_me();
+        }
         return;
     }
     if (r.isr >= 0x100) {

@@ -64,8 +64,8 @@ extern(C) int main(string[] args) {
         mod = mod_desc.next;
     }
 
-	long xid = sys_open_pipe(PipeSide.server, 0x4141_4242);
-	anoerr("sys_open_pipe");
+	// long xid = sys_open_pipe(PipeSide.server, 0x4141_4242);
+	// anoerr("sys_open_pipe");
 
 
 

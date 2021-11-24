@@ -118,7 +118,6 @@ void syscall_handler(ulong sys, Regs* r) {
 			memcpy(cast(byte*)current.tag.ptr, cast(const byte*)"<unnamed>", 10); 
 
             ulong argvp = (current.regs.rsp -= argc * 8);
-            printk("avp: {*}", argvp);
 			foreach (i; 0 .. argc) {
 				printk("todo: set arg{} to `{}`", i, (*argvd[i]).ptr);
 				if (i == 0) {
@@ -133,6 +132,7 @@ void syscall_handler(ulong sys, Regs* r) {
                 vm.copy_into(current.regs.rsp, (*argvd[i]).ptr, len + 1);
                 ulong ptr = current.regs.rsp;
                 vm.copy_into(argvp + i * 8, &ptr, 8);
+                printk("code {*}", *cast(ulong*)0x0000000fe0003ff8);
                 
 				free(argvd[i]);
 			}

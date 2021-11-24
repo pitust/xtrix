@@ -19,6 +19,7 @@ ulong cr3() {
     ulong value;
     asm {
         mov RAX, CR3;
+        // mov CR3, RAX;
         mov value, RAX;
     }
     return value;
@@ -43,6 +44,8 @@ void copy_to_cr3(ulong[256]* cr3in) {
         mov RSI, cr3in;
         mov RCX, 2048;
         rep; movsb;
+        // mov RAX, CR3;
+        // mov CR3, RAX;
     }
 }
 void kernel_copy_from_cr3(ulong[256]* cr3out) {
@@ -67,6 +70,8 @@ void kernel_copy_to_cr3(ulong[256]* cr3in) {
         mov RSI, cr3in;
         mov RCX, 2048;
         rep; movsb;
+        // mov RAX, CR3;
+        // mov CR3, RAX;
     }
 }
 void init_low_half() {
@@ -77,5 +82,7 @@ void init_low_half() {
         mov RAX, 0;
         mov RCX, 2048;
         rep; stosb;
+        // mov RAX, CR3;
+        // mov CR3, RAX;
     }
 }

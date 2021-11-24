@@ -77,10 +77,18 @@ struct VM {
             serial_printk("map: {*} -> {*}", va + (i << 12), phyaddr);
             *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
         }
+        asm {
+            mov RAX, CR3;
+            mov CR3, RAX;
+        }
     }
     void map(ulong va, ulong phy) {
         serial_printk("map: {*} -> {*}", va, phys(phy));
         *get_ptr_ptr(va) = 7 | phys(phy);
+        asm {
+            mov RAX, CR3;
+            mov CR3, RAX;
+        }
     }
     void copy_into(ulong va, const(void)* data, ulong count) {
         copy_from_cr3(current.vm.lowhalf);
