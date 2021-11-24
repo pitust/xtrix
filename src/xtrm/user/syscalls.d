@@ -39,6 +39,7 @@ enum error : long {
 }
 
 __gshared char[8192] ke_log_buffer;
+__gshared ulong pid_start = 2;
 
 void syscall_handler(ulong sys, Regs* r) {
     r.rax = -9999;
@@ -47,7 +48,7 @@ void syscall_handler(ulong sys, Regs* r) {
             ulong offset;
             char[] message = ke_log_buffer[0 .. r.rsi];
             current.vm.copy_out_of(r.rdi, message.ptr, r.rsi);
-            printk("[user] {}", message);
+            printk("\x1b[y]{}({})\x1b[w_0] {}", current.tag.ptr, current.pid, message);
             break;
         }
         case 0x02: {
@@ -60,8 +61,7 @@ void syscall_handler(ulong sys, Regs* r) {
         }
         case 0x10: {
             VM* newvm = alloc!VM;
-            newvm.entries = alloc!(VMEntry[256]);
-            newvm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+            newvm.do_init();
             current.vm.cloneto(newvm);
             Thread* nt = alloc!Thread();
             nt.rsp0_virt = alloc_stack(nt.rsp0_phy);
@@ -69,6 +69,7 @@ void syscall_handler(ulong sys, Regs* r) {
             nt.regs = *r;
             nt.regs.rax = 0;
             nt.regs.rip += 2;
+            nt.pid = ++pid_start;
             memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
             memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
             r.rax = 69;
@@ -97,8 +98,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			vm.die();
 			free(vm);
 			vm = alloc!VM;
-            vm.entries = alloc!(VMEntry[256]);
-            vm.lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+            vm.do_init();
 			memset(cast(byte*)vm.lowhalf.ptr, 0, 2048);
 			ulong e_entry = load_elf(vm, eslab, elfsz);
 			current.vm = vm;
@@ -119,7 +119,6 @@ void syscall_handler(ulong sys, Regs* r) {
 
             ulong argvp = (current.regs.rsp -= argc * 8);
 			foreach (i; 0 .. argc) {
-				printk("todo: set arg{} to `{}`", i, (*argvd[i]).ptr);
 				if (i == 0) {
 					char* str = (*argvd[i]).ptr;
 					char* so = current.tag.ptr;
@@ -132,7 +131,6 @@ void syscall_handler(ulong sys, Regs* r) {
                 vm.copy_into(current.regs.rsp, (*argvd[i]).ptr, len + 1);
                 ulong ptr = current.regs.rsp;
                 vm.copy_into(argvp + i * 8, &ptr, 8);
-                printk("code {*}", *cast(ulong*)0x0000000fe0003ff8);
                 
 				free(argvd[i]);
 			}

@@ -27,5 +27,7 @@ struct Thread {
     ulong[4] rsp0_phy;
     ulong rsp0_virt;
 	ulong sleepgen;
-    char[3848] tag;
+    ulong pid;
+    ulong uid;
+    char[3832] tag;
 }

@@ -36,8 +36,16 @@ struct VM {
     ulong[256]* lowhalf;
     VMEntry[256]* entries;
     ulong vme_count = 0;
+    bool did_init_correctly = false;
+
+    void do_init() {
+        did_init_correctly = true;
+        entries = alloc!(VMEntry[256]);
+        lowhalf = cast(ulong[256]*)alloc!(ulong[512]);
+    }
 
     private ulong* get_ptr_ptr(ulong va) {
+        assert(did_init_correctly, "Uninitialized thread!");
         assert(lowhalf, "No lowhalf!");
         ulong[] pte = *lowhalf;
 
@@ -62,6 +70,7 @@ struct VM {
     }
 
     void cloneto(VM* other) {
+        assert(did_init_correctly, "Uninitialized thread!");
         foreach (i; 0 .. vme_count) {
             VMEntry ent = (*entries)[i];
             other.map(ent.addr, ent.ptr.clone());
@@ -70,6 +79,7 @@ struct VM {
 
     // lifetime(phy): phy is owned by the caller
     void map(ulong va, Memory* phy) {
+        assert(did_init_correctly, "Uninitialized thread!");
         (*entries)[vme_count++] = VMEntry(phy, va);
         phy.rc += 1;
         foreach (i; 0 .. phy.pgCount) {
