@@ -26,18 +26,6 @@ import progs.init.init_srpc;
 /// _start is the OS-invoked entrypoint for xtrix user programs
 pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
-	printf("hello: welcome to process 2! argc={}", argc);
-	foreach (i; 0 .. argc) {
-		printf("argv[{}] = {*}", i, argv[i]);
-	}
-	// InitSRPC* rpc = connect!(InitSRPC)(0x1314d0deda64c37a);
-	// printf("(hello) rpc time!");
-	// rpc.hello();
-	// printf("value: {}", rpc.get());
-	// printf("value: {}", rpc.update(69));
-	// printf("value: {}", rpc.update(420));
-	// rpc.set(0x41414242);
-	// printf("value: {x}", rpc.get());
-	// rpc.set(0);
+	printf("{}: hello, world!", argv[0]);
 	return 0;
 }

@@ -19,13 +19,9 @@ module libxtrix.libc.asserts;
 extern (C) void __assert(char* assertion, char* file, int line) {
 
     import libxtrix.io : printf;
-	import libxtrix.syscall;
+	import libxtrix.syscall : sys_exit;
 
 	printf("Assertion failed: '{}' at {}:{}", assertion, file, line);
 
-    while (1) {
-        asm {
-            rep; nop;
-        }
-    }
+	sys_exit(255);
 }

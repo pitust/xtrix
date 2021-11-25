@@ -68,3 +68,8 @@ extern(C) byte* memmove(byte* dst, const(byte)* src, size_t size) {
 	}
 	return dst;
 }
+extern(C) ulong strlen(const(char)* str) {
+    ulong len = 0;
+    while (*str++) len++;
+    return len;
+}

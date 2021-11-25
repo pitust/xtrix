@@ -145,14 +145,16 @@ private bool handle_xtrm_escape_fsm(char c, uint* bgcol, uint* fgcol) {
     }
     return false;
 }
+private __gshared bool putc_printk_ctx = false;
 private void putc(char c) {
-    if (serial_printk_ctx) {
-        nographics_putc(c);
-        return;
-    }
-    uint bgcol, fgcol;
+    if (putc_printk_ctx) {
+		nographics_putc(c);
+		return;
+	}
+	putc_printk_ctx = true;
+	uint bgcol, fgcol;
     if (handle_xtrm_escape_fsm(c, &bgcol, &fgcol)) {
-        uint fg, bg;
+		uint fg, bg;
         ssfnc_do_getcolor(&bg, &fg);
         if (fgcol != ~0) {
             ubyte r = cast(ubyte)(fgcol >> 16);
@@ -181,15 +183,16 @@ private void putc(char c) {
             }
             bg = bgcol;
         }
-        if (fonts_init) {
+        if (fonts_init && !serial_printk_ctx) {
             ssfnc_do_setcolor(bg, fg);
         }
     } else {
         nographics_putc(c);
-        if (fonts_init) {
+        if (fonts_init && !serial_printk_ctx) {
             ssfnc_putc(c);
         }
     }
+	putc_printk_ctx = false;
 }
 private void nographics_putc(char c) {
     outb(0xe9, c);

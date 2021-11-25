@@ -113,7 +113,7 @@ void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(Asse
 
 	while (off < fmt.length) putch(fmt[off++]);
 	printf("' at {}:{}", file, line);
-	while (1) {}
+	sys_exit(255);
 }
 
 string tr_err(long er) {

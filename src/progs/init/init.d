@@ -3,8 +3,10 @@ module progs.init.init;
 import libxk.date;
 import libxtrix.io;
 import std.typecons;
+import libxk.hashmap;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
+import libxtrix.libc.string;
 
 struct phy { ulong base; mixin Proxy!(base); }
 
@@ -34,7 +36,9 @@ extern(C) int main(string[] args) {
     StivaleStruct struc;
     ulong addr = 0xfefe_0000;
     printf("Hello, world!");
-    
+
+	HashMap!(ulong, char*) children;
+
     sys_phyread(0x6b7a0db87ad4d3c1, &struc, StivaleStruct.sizeof);
     anoerr("sys_phyread");
 
@@ -45,20 +49,24 @@ extern(C) int main(string[] args) {
         if (mod_desc.name[0..5] != "font\x00" && mod_desc.name[0..5] != "init\x00") {
             printf(" + {}", mod_desc.name.ptr);
             ulong size =  (mod_desc.end - mod_desc.begin + 4095) & ~0xfff;
-
-            if (!sys_fork()) {
+			ulong pid = sys_fork();
+            if (!pid) {
                 printf("child...");
                 anoerr("sys_fork");
                 sys_phymap(mod_desc.begin, addr, size);
                 anoerr("sys_phymap");
                 char*[2] argv;
                 argv[0] = mod_desc.name.ptr;
-                sys_rawexec(cast(void*)addr, size, 1, argv.ptr);
+				sys_rawexec(cast(void*)addr, size, 1, argv.ptr);
                 anoerr("sys_rawexec");
                 assert(false, "failed to exec!");
             } else {
                 // addr += size;
                 printf("parent...");
+				ulong len = 1+strlen(mod_desc.name.ptr);
+				char* str = cast(char*)malloc(len);
+				memcpy(cast(byte*)str, cast(byte*)mod_desc.name.ptr, len+1);
+				children[pid] = str;
             }
         }
         mod = mod_desc.next;
@@ -71,7 +79,7 @@ extern(C) int main(string[] args) {
 		ulong code;
 		long stat = sys_wait(code);
 		if (stat < 0) anoerr("sys_wait");
-		printf("pid {} exited with code {}", stat, code);
+		printf("Process \x1b[y]{}({})\x1b[w_0] exited with code {}", children[stat], stat, code);
 	}
 }
 

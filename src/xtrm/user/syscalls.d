@@ -53,6 +53,14 @@ void syscall_handler(ulong sys, Regs* r) {
             printk("\x1b[y]{}({})\x1b[w_0] {}", current.tag.ptr, current.pid, message);
             break;
         }
+		case 0x01: {
+			ulong addr = r.rdi; ulong len = r.rsi;
+			Memory* m = Memory.allocate(len);
+			current.vm.map(addr, m);
+			copy_to_cr3(current.vm.lowhalf);
+			r.rax = 0;
+			break;
+		}
         case 0x02: {
             ulong phy = r.rdi; ulong virt = r.rsi; ulong len = r.rdx;
             foreach (i; 0 .. (len + 4096) >> 12) {
@@ -75,7 +83,7 @@ void syscall_handler(ulong sys, Regs* r) {
             nt.ppid = current.pid;
             memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
             memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
-            r.rax = 69;
+            r.rax = nt.pid;
             create_thread(nt);
             break;
         }
@@ -180,6 +188,7 @@ void syscall_handler(ulong sys, Regs* r) {
 		case 0x15: {
 			current.is_wfor = /* everything */ 1;
 			while (current.is_wfor) {
+				system_sleep_gen += 1;
 				current.sleepgen = system_sleep_gen + 1;
 				asm { int 0xfe; }
 			}

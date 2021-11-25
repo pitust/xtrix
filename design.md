@@ -30,3 +30,6 @@
         - (14) sys_exit(code)
         - (15) sys_wait(pid) -> pid, resulting code
         - (16) sys_waitfor(pid) -> resulting code
+	 - IO port shit
+	 	- (17) sys_inb(port) -> byte
+		- (18) sys_outb(port, byte)

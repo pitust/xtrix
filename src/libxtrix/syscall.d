@@ -40,7 +40,16 @@ void sys_dbglog(const char[] str) {
 }
 
 void sys_mmap(ulong addr, ulong size) {
-	assert(false, "TODO: mmap");
+	import libxtrix.io : anoerr;
+	long eno;
+	asm {
+		mov RDI, addr;
+		mov RSI, size;
+		int 0x11;
+		mov eno, RAX;
+	}
+	errno = eno;
+	anoerr("sys_mmap"); // todo: probably not assert :^)
 }
 
 /// - (02) sys_phymap(phy, virt, len)
