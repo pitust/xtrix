@@ -40,9 +40,11 @@ enum error : long {
 
 __gshared char[8192] ke_log_buffer;
 __gshared ulong pid_start = 1;
+__gshared HashMap!(ulong, Thread*) procs;
 
 void syscall_handler(ulong sys, Regs* r) {
-    r.rax = -9999;
+	procs[current.pid] = current; // todo: this is overly heavy-handed
+	r.rax = -9999;
     switch (sys) {
         case 0x00: {
             ulong offset;
@@ -70,11 +72,7 @@ void syscall_handler(ulong sys, Regs* r) {
             nt.regs.rax = 0;
             nt.regs.rip += 2;
             nt.pid = ++pid_start;
-            nt.parent = current;
-            ChildRecord* cr = current.records;
-            ChildRecord* crn = current.records = alloc!ChildRecord;
-            crn.next = cr;
-            crn.thr = nt;
+            nt.ppid = current.pid;
             memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
             memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
             r.rax = 69;
@@ -153,10 +151,46 @@ void syscall_handler(ulong sys, Regs* r) {
             r.rax = 0;
             break;
         }
-        default: {
-            printk("\x1b[y]{}({})\x1b[w_0] enosys {x}", current.tag.ptr, current.pid, sys);
-            r.rax = cast(ulong)(error.ENOSYS);
-            break;
-        }
-    }
+		case 0x14: {
+			if (current.pid == 1) assert(false, "attempting to kill init!");
+			ulong exit_code = r.rdi;
+			Thread* parent;
+			while (true) {
+				if (current.ppid !in procs) {
+					assert(false, "todo: reparenting of orphans");
+				}
+				parent = procs[current.ppid];
+				if (parent.is_wfor == current.pid || parent.is_wfor == 1) {
+					break;
+				}
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			system_sleep_gen += 1;
+			current.vm.die();
+			free(current.vm);
+			parent.is_wfor = 0;
+			parent.waitpid = current.pid;
+			parent.waitcode = exit_code;
+			current.suicide = true;
+			asm { int 0xfe; }
+			assert(false, "cannot reschedule");
+			break;
+		}
+		case 0x15: {
+			current.is_wfor = /* everything */ 1;
+			while (current.is_wfor) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			r.rax = current.waitpid;
+			r.rbx = current.waitcode;
+			return;
+		}
+		default: {
+			printk("\x1b[y]{}({})\x1b[w_0] enosys {x}", current.tag.ptr, current.pid, sys);
+			r.rax = cast(ulong)(error.ENOSYS);
+			break;
+		}
+	}
 }

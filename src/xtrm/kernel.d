@@ -123,9 +123,8 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.ss = 0x23;
 
     Thread* t = alloc!Thread;
-    // init is init's own parent. don't question this.
-    t.parent = t;
-    t.records = null;
+    // init is init's own parent. don't question this. not worth it.
+    t.ppid = 1;
     t.rsp0_virt = alloc_stack(t.rsp0_phy);
     t.vm = alloc!VM;
     t.vm.do_init();

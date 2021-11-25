@@ -57,17 +57,26 @@ void create_thread(Thread* t) {
 
 void sched_yield() {
 	do {
+		while (_cur.next.suicide) {
+			ThreadEntry* oldnext = _cur.next;
+			_cur.next = _cur.next.next;
+			release_stack(oldnext.thr.rsp0_phy);
+			free(oldnext.thr);
+			free(oldnext);
+		}
     	_cur = _cur.next;
 		if (_cur.sleepgen < system_sleep_gen) _cur.sleepgen = system_sleep_gen;
 	} while (_cur.sleepgen > system_sleep_gen);
 }
 
 void sched_save_preirq(Regs* r) {
-    _cur.regs = *r;
+    if (_cur.suicide) return;
+	_cur.regs = *r;
     copy_from_cr3(_cur.vm.lowhalf);
 }
 
 void sched_restore_postirq(Regs* r) {
+	assert(!_cur.suicide);
     *r = _cur.regs;
     copy_to_cr3(_cur.vm.lowhalf);
     set_rsp0(_cur.rsp0_virt);

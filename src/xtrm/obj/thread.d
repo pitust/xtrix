@@ -30,10 +30,7 @@ struct Thread {
     Regs regs;
     VM* vm;
     ulong[4] rsp0_phy;
-    ulong rsp0_virt;
-	ulong sleepgen;
-    ulong pid;
-    ulong uid;
-    ulong ppid;
-    char[3824] tag;
+    ulong rsp0_virt, sleepgen, pid, uid, ppid;
+	ulong is_wfor, waitpid, waitcode, suicide;
+	char[3790] tag;
 }

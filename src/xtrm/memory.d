@@ -182,7 +182,7 @@ private ulong* get_ptr_ptr(ulong va) {
 }
 
 void kmemmap(ulong va, ulong phy) {
-    import xtrm.cpu.cr3;
+    import xtrm.cpu.cr3 : kernel_copy_to_cr3;
     *get_ptr_ptr(va) = 3 | phy;
     kernel_copy_to_cr3(&kpages);
 }
@@ -190,8 +190,8 @@ void kmemmap(ulong va, ulong phy) {
 private __gshared ulong vmbase = 0xffff900000000000;
 
 ulong alloc_stack(out ulong[4] to_free) {
-    import xtrm.util;
-    ulong saddr = vmbase;
+    import xtrm.util : phys;
+    ulong vmaddr = vmbase;
 
     foreach (i; 0 .. 4) {
         ulong phy = cast(ulong)phys(allocate_on_pool(ppage));
@@ -200,8 +200,11 @@ ulong alloc_stack(out ulong[4] to_free) {
         to_free[i] = phy;
     }
     vmbase += 0x4000;
-    return saddr;
+    return vmaddr;
 }
 void release_stack(ulong[4] to_free) {
-    printk("todo: freeing stacks is probably important.");
+    import xtrm.util : virt;
+	foreach (stak; to_free) {
+		add_to_pool(ppage, cast(void*)virt(stak));
+	}
 }

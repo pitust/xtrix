@@ -118,6 +118,22 @@ void sys_exit(ulong code) {
     assert(false, "cannot continue after exit!");
 }
 
+// - (15) sys_wait(pid) -> pid, resulting code
+long sys_wait(out ulong code) {
+	long result;
+	code = 0;
+	asm {
+		int 0x25;
+		mov result, RAX;
+		mov code, RBX;
+	}
+	if (result < 0) errno = result;
+	return result;
+}
+// - (16) sys_waitfor(pid) -> resulting code
+
+
+
 pragma(mangle, "main")
 private extern(C) int target_main(ulong argc, char** argv);
 

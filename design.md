@@ -28,4 +28,5 @@
         - (11) sys_exec(elfptr, elfsz, argc, argv)
         - (12) sys_setuid(sub-uid)
         - (14) sys_exit(code)
-        - (15) sys_waitfor(pid) -> resulting code
+        - (15) sys_wait(pid) -> pid, resulting code
+        - (16) sys_waitfor(pid) -> resulting code
