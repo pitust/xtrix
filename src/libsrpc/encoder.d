@@ -4,15 +4,20 @@ import libxtrix.io;
 import libxk.list;
 import libxk.bytebuffer;
 
+/// encode `value` into a ByteBuffer
 ByteBuffer encode(T)(T value) {
     ByteBuffer buf;
     static if (is(T == ubyte)) {
+		// ubytes are encoded as-is
         buf << value;
     } else static if (is(T == ulong)) {
+		// numbers are memcpy'ed in
         buf.writeRaw(&value, 8);
     } else static if (is(T == uint)) {
+		// numbers are memcpy'ed in
         buf.writeRaw(&value, 4);
     } else static if (is(T == string)) {
+		// strings are encoded as {uint, chars}
         buf << encode(cast(uint)value.length);
         foreach (c; value) {
             buf << cast(ubyte)c;
