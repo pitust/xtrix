@@ -63,7 +63,7 @@ struct HashMap(K, V) {
 
     ref V opIndex(K index) {
         ChainItem* ci = getItemForK(index, false);
-        assert(ci, "null key in hashmap!");
+        assert(ci, "key does not exist in this hashmap!");
         return ci.value;
     }
 
