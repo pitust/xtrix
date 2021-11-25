@@ -20,6 +20,11 @@ import xtrm.obj.obj;
 import xtrm.obj.vm;
 import xtrm.interrupt.regs;
 
+struct ChildRecord {
+    Thread* thr;
+    ChildRecord* next;
+}
+
 struct Thread {
     Obj obj = Obj(ObjType.thr); alias obj this;
     Regs regs;
@@ -29,5 +34,6 @@ struct Thread {
 	ulong sleepgen;
     ulong pid;
     ulong uid;
-    char[3832] tag;
+    ulong ppid;
+    char[3824] tag;
 }

@@ -1,9 +1,9 @@
-set -ex
+set -e
 
-sh tools/all.sh && reset
+sh tools/all.sh && reset || exit
 
 if [ ! -e .qemu-debugcon-addr ]; then
     echo "/dev/null" >.qemu-debugcon-addr
 fi
 clear >"$(cat .qemu-debugcon-addr)"
-qemu-system-x86_64 -drive format=raw,file=xtrix.iso -debugcon "file:$(cat .qemu-debugcon-addr)" -s
+qemu-system-x86_64 -drive format=raw,file=xtrix.iso -debugcon "file:$(cat .qemu-debugcon-addr)" -serial stdio -s
