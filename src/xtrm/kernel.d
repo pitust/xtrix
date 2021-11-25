@@ -93,7 +93,8 @@ extern (C) void kmain(StivaleStruct* struc) {
             random_mixseed(struc.framebuffer_height);
             
             io_fonts_initialized(struc);
-            printk("Welcome to \x1b[r]xtrix!\x1b[w_0]  Copyright (C) 2021  pitust");
+            // this w_0 is needed because there is some startup bs
+            printk("\x1b[w_0]Welcome to \x1b[r]xtrix!\x1b[w_0]  Copyright (C) 2021  pitust");
             printk("This program comes with ABSOLUTELY NO WARRANTY; for details type `ktool --gpl w'.");
             printk("This is free software, and you are welcome to redistribute it");
             printk("under certain conditions; type `ktool --gpl c' for details.\n");
@@ -122,6 +123,9 @@ extern (C) void kmain(StivaleStruct* struc) {
     r.ss = 0x23;
 
     Thread* t = alloc!Thread;
+    // init is init's own parent. don't question this.
+    t.parent = t;
+    t.records = null;
     t.rsp0_virt = alloc_stack(t.rsp0_phy);
     t.vm = alloc!VM;
     t.vm.do_init();

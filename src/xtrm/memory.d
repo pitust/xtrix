@@ -183,8 +183,6 @@ private ulong* get_ptr_ptr(ulong va) {
 
 void kmemmap(ulong va, ulong phy) {
     import xtrm.cpu.cr3;
-
-    serial_printk("kmemmap: {*} -> {*}", va, phy);
     *get_ptr_ptr(va) = 3 | phy;
     kernel_copy_to_cr3(&kpages);
 }

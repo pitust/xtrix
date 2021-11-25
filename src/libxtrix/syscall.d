@@ -109,13 +109,21 @@ long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
     return r;
 }
 // - (12) sys_setuid(sub-uid)
-
+// - (14) sys_exit(code)
+void sys_exit(ulong code) {
+    asm {
+        mov RDI, code;
+        int 0x24;
+    }
+    assert(false, "cannot continue after exit!");
+}
 
 pragma(mangle, "main")
-private extern(C) void target_main(ulong argc, char** argv);
+private extern(C) int target_main(ulong argc, char** argv);
 
 extern(C) void _start(ulong argc, char** argv) {
     sys_dbglog("_start!");
-    target_main(argc, argv);
-    while(1) {}
+    asm { xor RAX, RAX; } // a pathetic attempt at setting the result value to zero
+    int code = target_main(argc, argv);
+    sys_exit(code);
 }

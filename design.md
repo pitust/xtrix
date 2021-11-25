@@ -27,3 +27,5 @@
         - (10) sys_fork() -> 0=child cpid=parent
         - (11) sys_exec(elfptr, elfsz, argc, argv)
         - (12) sys_setuid(sub-uid)
+        - (14) sys_exit(code)
+        - (15) sys_waitfor(pid) -> resulting code

@@ -158,11 +158,10 @@ private void putc(char c) {
             ubyte r = cast(ubyte)(fgcol >> 16);
             ubyte g =  cast(ubyte)(fgcol >> 8);
             ubyte b =  cast(ubyte)(fgcol >> 0);
-            if (fgcol == 0xFF_FF_FF || fgcol == WHITE) {
-                serial_printf("\x1b[37m");
-            } else {
-                serial_printf("\x1b[38;2;{};{};{}m", r, g, b);
+            if (fgcol == 0xFF_FF_FF) {
+                fgcol = WHITE;
             }
+            serial_printf("\x1b[38;2;{};{};{}m", r, g, b);
             fg = fgcol;
         }
         if (bgcol != ~0) {
@@ -173,11 +172,10 @@ private void putc(char c) {
                 ubyte fgr = cast(ubyte)(fg >> 16);
                 ubyte fgg =  cast(ubyte)(fg >> 8);
                 ubyte fgb =  cast(ubyte)(fg >> 0);
-                if (fg == 0xFF_FF_FF || fg == WHITE) {
-                    serial_printf("\x1b[0m\x1b[37m");
-                } else {
-                    serial_printf("\x1b[0m\x1b[38;2;{};{};{}m", fgr, fgg, fgb);
+                if (fg == 0xFF_FF_FF) {
+                    fg = WHITE;
                 }
+                serial_printf("\x1b[0m\x1b[38;2;{};{};{}m", fgr, fgg, fgb);
             } else {
                 serial_printf("\x1b[48;2;{};{};{}m", r, g, b);
             }
@@ -414,11 +412,11 @@ private void do_printk(bool newline, Args...)(string s, Args args) {
         putc(s[si]);
         si++;
     }
-    if (fonts_init) {
-        ssfnc_do_setcolor(0, WHITE);
-    }
     if (!serial_printk_ctx) {
-        nographics_putc('\x1b'); nographics_putc('['); nographics_putc('0'); nographics_putc('m');
+        ssfnc_do_setcolor(BLACK, WHITE);
+        foreach (c; "\x1b[0;38;2;198;203;210m") {
+            nographics_putc(c);
+        }
     }
     static if (newline) putc('\n');
     if (!serial_printk_ctx) show_fucking_cursor();

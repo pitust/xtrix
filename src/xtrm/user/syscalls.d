@@ -70,6 +70,11 @@ void syscall_handler(ulong sys, Regs* r) {
             nt.regs.rax = 0;
             nt.regs.rip += 2;
             nt.pid = ++pid_start;
+            nt.parent = current;
+            ChildRecord* cr = current.records;
+            ChildRecord* crn = current.records = alloc!ChildRecord;
+            crn.next = cr;
+            crn.thr = nt;
             memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
             memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
             r.rax = 69;
@@ -149,7 +154,7 @@ void syscall_handler(ulong sys, Regs* r) {
             break;
         }
         default: {
-            printk("[user] warn: enosys {x}", sys);
+            printk("\x1b[y]{}({})\x1b[w_0] enosys {x}", current.tag.ptr, current.pid, sys);
             r.rax = cast(ulong)(error.ENOSYS);
             break;
         }

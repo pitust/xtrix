@@ -27,7 +27,25 @@ extern(C) void interrupt_handler(Regs* r) {
     if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0xf) == 2 && ((r.error) >> 4) >= 0x10) {
         r.isr = (r.error >> 4) + 0xf0;
     }
-    if (r.isr != LAPIC_DEADLINE_IRQ) serial_printk("rx irq #{} in thread {}!", iotuple("x86/irq", r.isr), current.tag.ptr);
+    if (r.isr == LAPIC_DEADLINE_IRQ) {
+        sched_yield();
+
+        sched_restore_postirq(r);
+        lapic_eoi();
+        // the kernel reschedules by hand and not using preemption
+        if (r.cs == 0x1b) {
+            lapic_deadline_me();
+        }
+        return;
+    }
+    if (r.isr >= 0x100) {
+        ulong sysno = r.isr - 0x100;
+		sched_restore_postirq(r);
+        syscall_handler(sysno, r);
+        r.rip += 2;
+        return;
+    }
+    if (r.isr != LAPIC_DEADLINE_IRQ) printk("rx irq #{} in thread {}!", iotuple("x86/irq", r.isr), current.tag.ptr);
 	if (r.isr == 0xe) {
 		printk("\x1b[r] ERROR: \x1b[w_0] Got page fault while executing code in ring{}", r.cs & 3);
 		ulong cr2;
@@ -53,25 +71,6 @@ extern(C) void interrupt_handler(Regs* r) {
             return;
         }
 	}
-
-    if (r.isr == LAPIC_DEADLINE_IRQ) {
-        sched_yield();
-
-        sched_restore_postirq(r);
-        lapic_eoi();
-        // the kernel reschedules by hand and not using preemption
-        if (r.cs == 0x1b) {
-            lapic_deadline_me();
-        }
-        return;
-    }
-    if (r.isr >= 0x100) {
-        ulong sysno = r.isr - 0x100;
-		sched_restore_postirq(r);
-        syscall_handler(sysno, r);
-        r.rip += 2;
-        return;
-    }
     
     printk("Encontered unknown interrupt from ring{}! rip={*}", r.cs&3, r.rip);
     printk("Error information: {} | {x}", r.error, r.error);

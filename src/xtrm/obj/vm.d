@@ -87,7 +87,6 @@ struct VM {
         phy.rc += 1;
         foreach (i; 0 .. phy.pgCount) {
             ulong phyaddr = phys((*phy.pages)[i]);
-            serial_printk("map: {*} -> {*}", va + (i << 12), phyaddr);
             *get_ptr_ptr(va + (i << 12)) = 7 | phyaddr;
         }
         asm {
@@ -96,7 +95,6 @@ struct VM {
         }
     }
     void map(ulong va, ulong phy) {
-        serial_printk("map: {*} -> {*}", va, phys(phy));
         *get_ptr_ptr(va) = 7 | phys(phy);
         asm {
             mov RAX, CR3;
