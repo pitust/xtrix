@@ -22,10 +22,18 @@ import xtrm.user.syscalls;
 import xtrm.interrupt.regs;
 import xtrm.interrupt.lapic;
 
+__gshared bool fixwtf = false;
+
 extern(C) void interrupt_handler(Regs* r) {
     sched_save_preirq(r);
-    if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0xf) == 2 && ((r.error) >> 4) >= 0x10) {
-        r.isr = (r.error >> 4) + 0xf0;
+    if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0x7) == 2) {
+        if (r.error == 0x82) {
+            fixwtf = true;
+        }
+        if (fixwtf)
+            r.isr = (r.error >> 3) + 0xf0;
+        else
+            r.isr = (r.error >> 4) + 0xf0;
     }
     if (r.isr == LAPIC_DEADLINE_IRQ) {
         sched_yield();
