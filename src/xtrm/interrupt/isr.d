@@ -22,15 +22,18 @@ import xtrm.user.syscalls;
 import xtrm.interrupt.regs;
 import xtrm.interrupt.lapic;
 
-__gshared bool fixwtf = false;
+__gshared bool is_real_hw = false;
 
 extern(C) void interrupt_handler(Regs* r) {
     sched_save_preirq(r);
     if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0x7) == 2) {
+        // the first syscall is always coming from init(1) and is always a ke_log
+        // this checks if we are on real hw or qemu.
+        // qemu sets the codes wrong, so we have a special case for it.
         if (r.error == 0x82) {
-            fixwtf = true;
+            is_real_hw = true;
         }
-        if (fixwtf)
+        if (is_real_hw)
             r.isr = (r.error >> 3) + 0xf0;
         else
             r.isr = (r.error >> 4) + 0xf0;
