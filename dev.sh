@@ -1,1 +1,1 @@
-sh tools/qemu.sh
+preninja && ninja && sh tools/qemu.sh

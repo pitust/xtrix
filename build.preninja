@@ -1,0 +1,70 @@
+rules:
+  map:
+    k-ldc:
+      in: .d
+      out: -k.o
+      cmd: ldc2 $k-dflags $dflags $dnosse --of $out $in -c --makedeps=$depfile
+    k-clang:
+      in: .c
+      out: .o
+      cmd: clang $k-cflags $cflags $cnosse -o $out $in -c
+    u-ldc:
+      in: .d
+      out: -u.o
+      cmd: ldc2 $dflags $dnosse --of $out $in -c --makedeps=$depfile
+    nasm:
+      in: .s
+      out: .o
+      cmd: nasm -gdwarf -felf64 -o $out $in
+  reduce:
+    k-ld: ld.lld $in -o $out -T src/kernel.ld
+    ld: ld.lld $in -o $out -T src/userland.ld
+    prelink: ld.lld -r $in -o $out
+    xorriso: sh tools/makeiso.sh $out $in
+
+env:
+  k-dflags: -code-model=kernel 
+  dflags: --cache=build/kcache -I src --relocation-model=static --gdwarf --betterC -mtriple=x86_64-elf
+  dnosse: -mattr=-sse,-sse2,-sse3,-ssse3
+  k-cflags: -mcmodel=kernel -Iscalable-font2
+  cflags: -ggdb -target x86_64
+  cnosse: -mno-sse -mno-sse2 -mno-sse3 -mno-avx -mno-mmx
+
+actions:
+  $libxk:
+    prelink:
+      _: build/libxk.o
+      u-ldc: src/libxk/*.d
+
+  $libxtrix:
+    prelink:
+      _: build/libxtrix.o
+      u-ldc: src/libxtrix/*.d
+      u-ldc: src/libxtrix/libc/*.d
+
+  xorriso:
+    _: xtrix.iso
+    noop: limine.cfg
+    noop: assets/console.sfn
+    ld:
+      _: build/init.elf
+      noop: $libxtrix
+      noop: $libxk
+      u-ldc: src/progs/init/*.d
+    ld:
+      _: build/hello.elf
+      noop: $libxtrix
+      noop: $libxk
+      u-ldc: src/progs/hello/*.d
+    k-ld:
+      _: build/kernel.elf
+      k-ldc: src/libxk/*.d
+      k-ldc: src/xtrm/*.d
+      k-ldc: src/xtrm/*/*.d
+      k-clang: src/xtrm/ssfn.c
+      nasm: src/xtrixasm/*.s
+
+features:
+  clean: yes
+  reconf: reconf
+  run: sh tools/qemu.sh

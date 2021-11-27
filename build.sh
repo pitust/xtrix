@@ -1,1 +1,1 @@
-KERNEL_VER_SMOOTHSTART=1 sh tools/all.sh
+preninja && ninja

@@ -4,3 +4,5 @@
 /xtrix.iso
 /.gdb_history
 /.qemu-debugcon-addr
+/.ninja*
+/build.ninja
