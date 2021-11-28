@@ -5,11 +5,13 @@ import libxk.cstring;
 import core.lifetime;
 
 private ulong mmhash_mix(ulong value) {
-    value ^= value >> 33;
-    value *= 0xFF51AFD7ED558CCD;
-    value ^= value >> 33;
-    value *= 0xC4CEB9FE1A85EC53;
-    value ^= value >> 33;
+    // i think this doesn't help memory usage that much lmao
+
+    // value ^= value >> 33;
+    // value *= 0xFF51AFD7ED558CCD;
+    // value ^= value >> 33;
+    // value *= 0xC4CEB9FE1A85EC53;
+    // value ^= value >> 33;
     return value;
 }
 

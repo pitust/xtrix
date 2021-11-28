@@ -41,6 +41,7 @@ enum error : long {
 __gshared char[8192] ke_log_buffer;
 __gshared ulong pid_start = 1;
 __gshared HashMap!(ulong, Thread*) procs;
+__gshared HashMap!(ulong, ulong*) xid_servers;
 
 void syscall_handler(ulong sys, Regs* r) {
 	procs[current.pid] = current; // todo: this is overly heavy-handed
@@ -69,6 +70,52 @@ void syscall_handler(ulong sys, Regs* r) {
             r.rax = 0;
             break;
         }
+		case 0x03: {
+			ulong pipeside = r.rdi; ulong pipeid = r.rsi;
+
+			if (pipeside > 1) {
+				printk("ps: {x}", pipeside);
+				r.rax = error.EINVAL;
+				return;
+			}
+
+			if (!pipeside) {
+				// client
+				ulong xid = (random_ulong() << 32) ^ random_ulong() ^ (random_ulong() >> 32);
+				xid &= 0xffff_ffff_ffff;
+				while (true) {
+					if (pipeid in xid_servers && xid_servers[pipeid]) {
+						*xid_servers[pipeid] = xid;
+						r.rax = xid;
+						system_sleep_gen += 1;
+						return;
+					}
+					current.sleepgen = system_sleep_gen + 1;
+					asm { int 0xfe; }
+				}
+				assert(false, "open client");
+			} else {
+				// server
+				while (pipeid in xid_servers && xid_servers[pipeid]) {
+					current.sleepgen = system_sleep_gen + 1;
+					asm { int 0xfe; }
+				}
+				ulong cid = 0;
+				xid_servers[pipeid] = &cid;
+				system_sleep_gen += 1;
+				while (!cid) {
+					current.sleepgen = system_sleep_gen + 1;
+					asm { int 0xfe; }
+				}
+				xid_servers[pipeid] = null;
+				current.sleepgen = system_sleep_gen + 1;
+
+				assert(cid, "no cid set!");
+				r.rax = cid;
+				return;
+			}
+			break;
+		}
         case 0x10: {
             VM* newvm = alloc!VM;
             newvm.do_init();

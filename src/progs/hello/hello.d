@@ -27,5 +27,12 @@ import progs.init.init_srpc;
 pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
+	long xid = sys_open_pipe(PipeSide.client, 0x4141_4242);
+	anoerr("sys_open_pipe");
+
+	printf("pipe: {x}", xid);
+	// sys_close(xid);
+	// anoerr("sys_close");
+
 	return 0;
 }

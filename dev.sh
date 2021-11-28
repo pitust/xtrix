@@ -1,1 +1,1 @@
-preninja && ninja && sh tools/qemu.sh
+preninja && ninja run

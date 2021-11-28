@@ -78,8 +78,30 @@ long sys_phyread(ulong phy, void* virt, ulong len) {
     errno = res;
     return res;
 }
+
+enum PipeSide : ulong { client = 0, server = 1 }
 // - (03) sys_open_pipe(side: 0=client 1=server, chan) -> xid
+long sys_open_pipe(PipeSide side, ulong chan) {
+    long xid;
+    asm {
+        mov RDI, side;
+        mov RSI, chan;
+        int 0x13;
+        mov xid, RAX;
+    }
+    if (xid < 0) errno = xid;
+    return xid;
+}
 // - (04) sys_close(xid)
+void sys_close(ulong xid) {
+    long res;
+    asm {
+        mov RDI, xid;
+        int 0x14;
+        mov res, RAX;
+    }
+    errno = res;
+}
 // - (05) sys_send_region(xid, addr, len)
 // - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
 // - (07) sys_send_data(xid, dataptr, len)

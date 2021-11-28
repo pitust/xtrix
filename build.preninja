@@ -11,7 +11,7 @@ rules:
     u-ldc:
       in: .d
       out: -u.o
-      cmd: ldc2 $dflags $dnosse --of $out $in -c --makedeps=$depfile
+      cmd: ldc2 $dflags $dnosse --of $out $in -c --makedeps=$depfile --cache=build/ucache
     nasm:
       in: .s
       out: .o
@@ -23,9 +23,9 @@ rules:
     xorriso: sh tools/makeiso.sh $out $in
 
 env:
-  k-dflags: -code-model=kernel 
-  dflags: --cache=build/kcache -I src --relocation-model=static --gdwarf --betterC -mtriple=x86_64-elf
-  dnosse: -mattr=-sse,-sse2,-sse3,-ssse3
+  k-dflags: -code-model=kernel --cache=build/kcache
+  dflags: -I src --relocation-model=static --gdwarf --betterC -mtriple=x86_64-elf
+  dnosse: -mattr=-sse,-sse2,-sse3,-ssse3 --enable-color=true
   k-cflags: -mcmodel=kernel -Iscalable-font2
   cflags: -ggdb -target x86_64
   cnosse: -mno-sse -mno-sse2 -mno-sse3 -mno-avx -mno-mmx
