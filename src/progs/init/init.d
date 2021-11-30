@@ -76,9 +76,9 @@ extern(C) int main(string[] args) {
 	anoerr("sys_open_pipe");
 
     printf("pipe: {x}", xid);
-
+    printf("ul: {}", sys_recv_ul(xid));
+    anoerr("sys_recv_ul");
     
-
 	while (true) {
 		ulong code;
 		long stat = sys_wait(code);

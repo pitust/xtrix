@@ -38,10 +38,21 @@ enum error : long {
     EINVAL = -5,
 }
 
+enum XIDMessageType {
+	complete,
+	ul
+}
+
+struct XIDMessage {
+	XIDMessageType ty;
+	void* outbuf;
+}
+
 __gshared char[8192] ke_log_buffer;
 __gshared ulong pid_start = 1;
 __gshared HashMap!(ulong, Thread*) procs;
 __gshared HashMap!(ulong, ulong*) xid_servers;
+__gshared HashMap!(ulong, XIDMessage*) xidmsg;
 
 void syscall_handler(ulong sys, Regs* r) {
 	procs[current.pid] = current; // todo: this is overly heavy-handed
@@ -88,12 +99,12 @@ void syscall_handler(ulong sys, Regs* r) {
 						*xid_servers[pipeid] = xid;
 						r.rax = xid;
 						system_sleep_gen += 1;
+						printk("RR");
 						return;
 					}
 					current.sleepgen = system_sleep_gen + 1;
 					asm { int 0xfe; }
 				}
-				assert(false, "open client");
 			} else {
 				// server
 				while (pipeid in xid_servers && xid_servers[pipeid]) {
@@ -108,12 +119,55 @@ void syscall_handler(ulong sys, Regs* r) {
 					asm { int 0xfe; }
 				}
 				xid_servers[pipeid] = null;
-				current.sleepgen = system_sleep_gen + 1;
+				system_sleep_gen += 1;
 
 				assert(cid, "no cid set!");
 				r.rax = cid;
+				printk("TT");
 				return;
 			}
+			break;
+		}
+		case 0x0a: {
+			ulong xid = r.rdi; ulong msgdata = r.rsi;
+			while (!(xid in xidmsg)) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			while (!xidmsg[xid] || xidmsg[xid].ty != XIDMessageType.ul) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			XIDMessage* msg = xidmsg[xid];
+			*cast(ulong*)msg.outbuf = msgdata;
+			msg.ty = XIDMessageType.complete;
+			system_sleep_gen += 1;
+			r.rax = 0;
+			break;
+		}
+		case 0x0b: {
+			ulong xid = r.rdi;
+			if (!(xid in xidmsg))
+				xidmsg[xid] = null;
+			
+			while (xidmsg[xid]) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			XIDMessage msg;
+			msg.ty = XIDMessageType.ul;
+			ulong dat = 0;
+			msg.outbuf = &dat;
+			xidmsg[xid] = &msg;
+			system_sleep_gen += 1;
+			while (msg.ty == XIDMessageType.ul) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			xidmsg[xid] = null;
+			system_sleep_gen += 1;
+
+			r.rax = dat;
 			break;
 		}
         case 0x10: {
