@@ -3,7 +3,7 @@ rules:
     k-ldc:
       in: .d
       out: -k.o
-      cmd: ldc2 $k-dflags $dflags $dnosse --of $out $in -c --makedeps=$depfile
+      cmd: ldc2 $k-dflags $dflags $dnosse --of $out $in -c
     k-clang:
       in: .c
       out: .o
@@ -11,7 +11,7 @@ rules:
     u-ldc:
       in: .d
       out: -u.o
-      cmd: ldc2 $dflags $dnosse --of $out $in -c --makedeps=$depfile --cache=build/ucache
+      cmd: ldc2 $dflags $dnosse --of $out $in -c --cache=build/ucache
     nasm:
       in: .s
       out: .o
