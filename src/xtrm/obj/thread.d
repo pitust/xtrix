@@ -21,16 +21,16 @@ import xtrm.obj.vm;
 import xtrm.interrupt.regs;
 
 struct ChildRecord {
-    Thread* thr;
-    ChildRecord* next;
+	Thread* thr;
+	ChildRecord* next;
 }
 
 struct Thread {
-    Obj obj = Obj(ObjType.thr); alias obj this;
-    Regs regs;
-    VM* vm;
-    ulong[4] rsp0_phy;
-    ulong rsp0_virt, sleepgen, pid, uid, ppid;
+	Obj obj = Obj(ObjType.thr); alias obj this;
+	Regs regs;
+	VM* vm;
+	ulong[4] rsp0_phy;
+	ulong rsp0_virt, sleepgen, pid, uid, ppid;
 	ulong is_wfor, waitpid, waitcode, suicide;
 	char[3790] tag;
 }

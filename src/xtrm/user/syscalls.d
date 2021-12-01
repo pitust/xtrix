@@ -33,9 +33,9 @@ import xtrm.interrupt.regs;
 enum error : long {
 	EACCES = -1,
 	ENOSYS = -2,
-    EAGAIN = -3,
-    EFAULT = -4,
-    EINVAL = -5,
+	EAGAIN = -3,
+	EFAULT = -4,
+	EINVAL = -5,
 }
 
 enum XIDMessageType {
@@ -57,14 +57,14 @@ __gshared HashMap!(ulong, XIDMessage*) xidmsg;
 void syscall_handler(ulong sys, Regs* r) {
 	procs[current.pid] = current; // todo: this is overly heavy-handed
 	r.rax = -9999;
-    switch (sys) {
-        case 0x00: {
-            ulong offset;
-            char[] message = ke_log_buffer[0 .. r.rsi];
-            current.vm.copy_out_of(r.rdi, message.ptr, r.rsi);
-            printk("\x1b[y]{}({})\x1b[w_0] {}", current.tag.ptr, current.pid, message);
-            break;
-        }
+	switch (sys) {
+		case 0x00: {
+			ulong offset;
+			char[] message = ke_log_buffer[0 .. r.rsi];
+			current.vm.copy_out_of(r.rdi, message.ptr, r.rsi);
+			printk("\x1b[y]{}({})\x1b[w_0] {}", current.tag.ptr, current.pid, message);
+			break;
+		}
 		case 0x01: {
 			ulong addr = r.rdi; ulong len = r.rsi;
 			Memory* m = Memory.allocate(len);
@@ -73,14 +73,14 @@ void syscall_handler(ulong sys, Regs* r) {
 			r.rax = 0;
 			break;
 		}
-        case 0x02: {
-            ulong phy = r.rdi; ulong virt = r.rsi; ulong len = r.rdx;
-            foreach (i; 0 .. (len + 4096) >> 12) {
-                current.vm.map(virt + (i << 12), phy + (i << 12));
-            }
-            r.rax = 0;
-            break;
-        }
+		case 0x02: {
+			ulong phy = r.rdi; ulong virt = r.rsi; ulong len = r.rdx;
+			foreach (i; 0 .. (len + 4096) >> 12) {
+				current.vm.map(virt + (i << 12), phy + (i << 12));
+			}
+			r.rax = 0;
+			break;
+		}
 		case 0x03: {
 			ulong pipeside = r.rdi; ulong pipeid = r.rsi;
 
@@ -99,7 +99,6 @@ void syscall_handler(ulong sys, Regs* r) {
 						*xid_servers[pipeid] = xid;
 						r.rax = xid;
 						system_sleep_gen += 1;
-						printk("RR");
 						return;
 					}
 					current.sleepgen = system_sleep_gen + 1;
@@ -123,7 +122,6 @@ void syscall_handler(ulong sys, Regs* r) {
 
 				assert(cid, "no cid set!");
 				r.rax = cid;
-				printk("TT");
 				return;
 			}
 			break;
@@ -170,27 +168,27 @@ void syscall_handler(ulong sys, Regs* r) {
 			r.rax = dat;
 			break;
 		}
-        case 0x10: {
-            VM* newvm = alloc!VM;
-            newvm.do_init();
-            current.vm.cloneto(newvm);
-            Thread* nt = alloc!Thread();
-            nt.rsp0_virt = alloc_stack(nt.rsp0_phy);
-            nt.vm = newvm;
-            nt.regs = *r;
-            nt.regs.rax = 0;
-            nt.regs.rip += 2;
-            nt.pid = ++pid_start;
-            nt.ppid = current.pid;
-            memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
-            memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
-            r.rax = nt.pid;
-            create_thread(nt);
-            break;
-        }
+		case 0x10: {
+			VM* newvm = alloc!VM;
+			newvm.do_init();
+			current.vm.cloneto(newvm);
+			Thread* nt = alloc!Thread();
+			nt.rsp0_virt = alloc_stack(nt.rsp0_phy);
+			nt.vm = newvm;
+			nt.regs = *r;
+			nt.regs.rax = 0;
+			nt.regs.rip += 2;
+			nt.pid = ++pid_start;
+			nt.ppid = current.pid;
+			memcpy(cast(byte*)nt.tag, cast(const byte*)"forked ", 7);
+			memcpy((cast(byte*)nt.tag) + 7, cast(const byte*)current.tag, nt.tag.length - 7);
+			r.rax = nt.pid;
+			create_thread(nt);
+			break;
+		}
 		case 0x11: {
 		//     sys_exec(elfptr, elfsz, argc, argv)
-             ulong elfptr = r.rdi; ulong elfsz = r.rsi; ulong argc = r.rdx; ulong argv = r.rcx;
+			 ulong elfptr = r.rdi; ulong elfsz = r.rsi; ulong argc = r.rdx; ulong argv = r.rcx;
 			
 			VM* vm = current.vm;
 			char[256]*[16] argvd;
@@ -209,7 +207,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			vm.die();
 			free(vm);
 			vm = alloc!VM;
-            vm.do_init();
+			vm.do_init();
 			memset(cast(byte*)vm.lowhalf.ptr, 0, 2048);
 			ulong e_entry = load_elf(vm, eslab, elfsz);
 			current.vm = vm;
@@ -223,12 +221,12 @@ void syscall_handler(ulong sys, Regs* r) {
 			current.regs.flags = 0x200;
 			current.regs.ss = 0x23;
 			current.regs.rsp = 0xfe0000000 + STACK_SIZE;
-            current.regs.rip -= 2;
+			current.regs.rip -= 2;
 			copy_to_cr3(vm.lowhalf);
 
 			memcpy(cast(byte*)current.tag.ptr, cast(const byte*)"<unnamed>", 10); 
 
-            ulong argvp = (current.regs.rsp -= argc * 8);
+			ulong argvp = (current.regs.rsp -= argc * 8);
 			foreach (i; 0 .. argc) {
 				if (i == 0) {
 					char* str = (*argvd[i]).ptr;
@@ -236,30 +234,30 @@ void syscall_handler(ulong sys, Regs* r) {
 					while (*str) { *so++ = *str++; }
 					*so = 0;
 				}
-                ulong len = strlen((*argvd[i]).ptr);
-                current.regs.rsp -= len + 1;
-                (*argvd[i]).ptr[len] = 0;
-                vm.copy_into(current.regs.rsp, (*argvd[i]).ptr, len + 1);
-                ulong ptr = current.regs.rsp;
-                vm.copy_into(argvp + i * 8, &ptr, 8);
-                
+				ulong len = strlen((*argvd[i]).ptr);
+				current.regs.rsp -= len + 1;
+				(*argvd[i]).ptr[len] = 0;
+				vm.copy_into(current.regs.rsp, (*argvd[i]).ptr, len + 1);
+				ulong ptr = current.regs.rsp;
+				vm.copy_into(argvp + i * 8, &ptr, 8);
+				
 				free(argvd[i]);
 			}
-            current.regs.rsp -= current.regs.rsp & 0x0f;
-            current.regs.rsp -= 0x10;
-            current.regs.rdi = argc;
-            current.regs.rsi = argvp;
+			current.regs.rsp -= current.regs.rsp & 0x0f;
+			current.regs.rsp -= 0x10;
+			current.regs.rdi = argc;
+			current.regs.rsi = argvp;
 			*r = current.regs;
 
 			break;
-        }
-        case 0x13: {
-            ulong phy = r.rdi; ulong vaddr = r.rsi; ulong len = r.rdx;
-            if (phy == 0x6b7a0db87ad4d3c1) phy = saddr;
-            current.vm.copy_into(vaddr, cast(void*)virt(phy), len);
-            r.rax = 0;
-            break;
-        }
+		}
+		case 0x13: {
+			ulong phy = r.rdi; ulong vaddr = r.rsi; ulong len = r.rdx;
+			if (phy == 0x6b7a0db87ad4d3c1) phy = saddr;
+			current.vm.copy_into(vaddr, cast(void*)virt(phy), len);
+			r.rax = 0;
+			break;
+		}
 		case 0x14: {
 			if (current.pid == 1) assert(false, "attempting to kill init!");
 			ulong exit_code = r.rdi;

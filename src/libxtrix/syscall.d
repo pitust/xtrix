@@ -21,19 +21,19 @@ enum error : long {
 	EOK = 0,
 	EACCES = -1,
 	ENOSYS = -2,
-    EAGAIN = -3,
-    EFAULT = -4,
-    EINVAL = -5,
+	EAGAIN = -3,
+	EFAULT = -4,
+	EINVAL = -5,
 }
 
 __gshared extern(C) long errno;
 
 void sys_dbglog(const char* str, ulong length) {
-    asm {
-        mov RDI, str;
-        mov RSI, length;
-        int 0x10;
-    }
+	asm {
+		mov RDI, str;
+		mov RSI, length;
+		int 0x10;
+	}
 }
 void sys_dbglog(const char[] str) {
 	sys_dbglog(str.ptr, str.length);
@@ -54,53 +54,53 @@ void sys_mmap(ulong addr, ulong size) {
 
 /// - (02) sys_phymap(phy, virt, len)
 long sys_phymap(ulong phy, ulong virt, ulong len) {
-    long r;
-    asm {
-        mov RDI, phy;
-        mov RSI, virt;
-        mov RDX, len;
-        int 0x12;
-        mov r, RAX;
-    }
-    errno = r;
-    return r;
+	long r;
+	asm {
+		mov RDI, phy;
+		mov RSI, virt;
+		mov RDX, len;
+		int 0x12;
+		mov r, RAX;
+	}
+	errno = r;
+	return r;
 }
 /// - (13) sys_phyread(phy, virt, len)
 long sys_phyread(ulong phy, void* virt, ulong len) {
-    long res;
-    asm {
-        mov RDI, phy;
-        mov RSI, virt;
-        mov RDX, len;
-        int 0x23;
-        mov res, RAX;
-    }
-    errno = res;
-    return res;
+	long res;
+	asm {
+		mov RDI, phy;
+		mov RSI, virt;
+		mov RDX, len;
+		int 0x23;
+		mov res, RAX;
+	}
+	errno = res;
+	return res;
 }
 
 enum PipeSide : ulong { client = 0, server = 1 }
 // - (03) sys_open_pipe(side: 0=client 1=server, chan) -> xid
 long sys_open_pipe(PipeSide side, ulong chan) {
-    long xid;
-    asm {
-        mov RDI, side;
-        mov RSI, chan;
-        int 0x13;
-        mov xid, RAX;
-    }
-    if (xid < 0) errno = xid;
-    return xid;
+	long xid;
+	asm {
+		mov RDI, side;
+		mov RSI, chan;
+		int 0x13;
+		mov xid, RAX;
+	}
+	if (xid < 0) errno = xid;
+	return xid;
 }
 // - (04) sys_close(xid)
 void sys_close(ulong xid) {
-    long res;
-    asm {
-        mov RDI, xid;
-        int 0x14;
-        mov res, RAX;
-    }
-    errno = res;
+	long res;
+	asm {
+		mov RDI, xid;
+		int 0x14;
+		mov res, RAX;
+	}
+	errno = res;
 }
 // - (05) sys_send_region(xid, addr, len)
 // - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
@@ -109,31 +109,31 @@ void sys_close(ulong xid) {
 // - (09) sys_recv_data(xid, dataptr, len) -> 0=success 1=fail
 // - (0a) sys_send_ul(xid, ulong)
 error sys_send_ul(ulong xid, ulong ul) {
-    error e;
-    asm {
-        mov RDI, xid;
-        mov RSI, ul;
-        int 0x1a;
-        mov e, RAX;
-    }
-    errno = e;
-    return e;
+	error e;
+	asm {
+		mov RDI, xid;
+		mov RSI, ul;
+		int 0x1a;
+		mov e, RAX;
+	}
+	errno = e;
+	return e;
 }
 // - (0b) sys_recv_ul(xid) -> ulong
 ulong sys_recv_ul(ulong xid) {
-    error e;
-    ulong ul;
-    asm {
-        mov RDI, xid;
-        int 0x1b;
-        mov e, RAX;
-        mov ul, RAX;
-    }
-    if (e < 0) {
-        ul = 0;
-        errno = e;
-    }
-    return ul;
+	error e;
+	ulong ul;
+	asm {
+		mov RDI, xid;
+		int 0x1b;
+		mov e, RAX;
+		mov ul, RAX;
+	}
+	if (e < 0) {
+		ul = 0;
+		errno = e;
+	}
+	return ul;
 }
 // - (0c) sys_send_barrier(xid)
 // - (0d) sys_recv_barrier(xid)
@@ -142,37 +142,37 @@ ulong sys_recv_ul(ulong xid) {
 
 /// - (10) sys_fork() -> 0=child cpid=parent
 long sys_fork() {
-    long r;
-    asm {
-        int 0x20;
-        mov r, RAX;
-    }
-    errno = r < 0 ? r : 0;
-    return r;
+	long r;
+	asm {
+		int 0x20;
+		mov r, RAX;
+	}
+	errno = r < 0 ? r : 0;
+	return r;
 }
 
 /// - (11) sys_exec(elfptr, elfsz, argc, argv)
 long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
-    long r;
-    asm {
-        mov RDI, elfptr;
-        mov RSI, elfsz;
-        mov RDX, argc;
-        mov RCX, argv;
-        int 0x21;
-        mov r, RAX;
-    }
-    errno = r;
-    return r;
+	long r;
+	asm {
+		mov RDI, elfptr;
+		mov RSI, elfsz;
+		mov RDX, argc;
+		mov RCX, argv;
+		int 0x21;
+		mov r, RAX;
+	}
+	errno = r;
+	return r;
 }
 // - (12) sys_setuid(sub-uid)
 // - (14) sys_exit(code)
 void sys_exit(ulong code) {
-    asm {
-        mov RDI, code;
-        int 0x24;
-    }
-    assert(false, "cannot continue after exit!");
+	asm {
+		mov RDI, code;
+		int 0x24;
+	}
+	assert(false, "cannot continue after exit!");
 }
 
 // - (15) sys_wait(pid) -> pid, resulting code
@@ -195,8 +195,8 @@ pragma(mangle, "main")
 private extern(C) int target_main(ulong argc, char** argv);
 
 extern(C) void _start(ulong argc, char** argv) {
-    sys_dbglog("_start!");
-    asm { xor RAX, RAX; } // a pathetic attempt at setting the result value to zero
-    int code = target_main(argc, argv);
-    sys_exit(code);
+	sys_dbglog("_start!");
+	asm { xor RAX, RAX; } // a pathetic attempt at setting the result value to zero
+	int code = target_main(argc, argv);
+	sys_exit(code);
 }

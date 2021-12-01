@@ -19,25 +19,25 @@ import xtrm.io;
 import xtrm.memory;
 
 enum ObjType {
-    nullobj,
-    mem,
-    memref,
-    vm,
-    thr,
-    chan,
-    cred,
-    credproof,
-    credverity,
+	nullobj,
+	mem,
+	memref,
+	vm,
+	thr,
+	chan,
+	cred,
+	credproof,
+	credverity,
 	responder,
 }
 
 struct Obj {
-    ObjType type;
-    ulong rc = 0;
+	ObjType type;
+	ulong rc = 0;
 }
 private __gshared Obj _nullobj = Obj(ObjType.nullobj, 999999999);
 
 // lifetime(return value): the return value is owned by the kernel as a whole, and needs not be refcounted
 Obj* getnull() {
-    return &_nullobj;
+	return &_nullobj;
 }

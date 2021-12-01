@@ -6,25 +6,25 @@ import libxk.bytebuffer;
 
 /// encode `value` into a ByteBuffer
 ByteBuffer encode(T)(T value) {
-    ByteBuffer buf;
-    static if (is(T == ubyte)) {
+	ByteBuffer buf;
+	static if (is(T == ubyte)) {
 		// ubytes are encoded as-is
-        buf << value;
-    } else static if (is(T == ulong)) {
+		buf << value;
+	} else static if (is(T == ulong)) {
 		// numbers are memcpy'ed in
-        buf.writeRaw(&value, 8);
-    } else static if (is(T == uint)) {
+		buf.writeRaw(&value, 8);
+	} else static if (is(T == uint)) {
 		// numbers are memcpy'ed in
-        buf.writeRaw(&value, 4);
-    } else static if (is(T == string)) {
+		buf.writeRaw(&value, 4);
+	} else static if (is(T == string)) {
 		// strings are encoded as {uint, chars}
-        buf << encode(cast(uint)value.length);
-        foreach (c; value) {
-            buf << cast(ubyte)c;
-        }
-    } else static assert(false, "cannot encode type " ~ T.stringof);
+		buf << encode(cast(uint)value.length);
+		foreach (c; value) {
+			buf << cast(ubyte)c;
+		}
+	} else static assert(false, "cannot encode type " ~ T.stringof);
 
-    return buf;
+	return buf;
 }
 
 T decode(T)(ubyte* payload, ulong length, ref ulong offset) {

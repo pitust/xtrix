@@ -19,20 +19,20 @@ section .text
 global _start
 extern kmain
 _start:
-    call kmain
+	call kmain
 .e:
-    hlt
-    jmp .e
+	hlt
+	jmp .e
 
 section .stivalehdr
-    dq stack_top    ; stack
-    dw 9            ; flags (framebuffer and higher half ptrs)
-    dw 0            ; fb width
-    dw 0            ; fb height
-    dw 32           ; bpp
-    dq 0            ; entry
+	dq stack_top    ; stack
+	dw 9            ; flags (framebuffer and higher half ptrs)
+	dw 0            ; fb width
+	dw 0            ; fb height
+	dw 32           ; bpp
+	dq 0            ; entry
 
 section .bss
 stack_bottom:
-    resb 0x8000
+	resb 0x8000
 stack_top:
