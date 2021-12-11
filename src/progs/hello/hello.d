@@ -31,6 +31,8 @@ int _main(ulong argc, char** argv) {
 	anoerr("sys_open_pipe");
 
 	printf("pipe: {x}", xid);
+	// ulong[1] data = [69_420];
+	// sys_send_data(xid, cast(void*)data.ptr, 8);
 	sys_send_ul(xid, 69_420);
 	anoerr("sys_send_ul");
 	// sys_close(xid);

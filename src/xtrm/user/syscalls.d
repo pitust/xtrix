@@ -48,6 +48,35 @@ struct XIDMessage {
 	void* outbuf;
 }
 
+XIDMessage* xidsig_tx(ulong xid, XIDMessageType mt) {
+	while (!(xid in xidmsg)) {
+		current.sleepgen = system_sleep_gen + 1;
+		asm { int 0xfe; }
+	}
+	while (!xidmsg[xid] || xidmsg[xid].ty != mt) {
+		current.sleepgen = system_sleep_gen + 1;
+		asm { int 0xfe; }
+	}
+	return xidmsg[xid];
+}
+void xidsig_rx(ulong xid, XIDMessage* msg) {
+	if (!(xid in xidmsg))
+		xidmsg[xid] = null;
+	
+	while (xidmsg[xid]) {
+		current.sleepgen = system_sleep_gen + 1;
+		asm { int 0xfe; }
+	}
+	xidmsg[xid] = msg;
+	system_sleep_gen += 1;
+	while (msg.ty == XIDMessageType.ul) {
+		current.sleepgen = system_sleep_gen + 1;
+		asm { int 0xfe; }
+	}
+	xidmsg[xid] = null;
+	system_sleep_gen += 1;
+}
+
 __gshared char[8192] ke_log_buffer;
 __gshared ulong pid_start = 1;
 __gshared HashMap!(ulong, Thread*) procs;
@@ -126,17 +155,12 @@ void syscall_handler(ulong sys, Regs* r) {
 			}
 			break;
 		}
+		case 0x07: {
+
+		}
 		case 0x0a: {
 			ulong xid = r.rdi; ulong msgdata = r.rsi;
-			while (!(xid in xidmsg)) {
-				current.sleepgen = system_sleep_gen + 1;
-				asm { int 0xfe; }
-			}
-			while (!xidmsg[xid] || xidmsg[xid].ty != XIDMessageType.ul) {
-				current.sleepgen = system_sleep_gen + 1;
-				asm { int 0xfe; }
-			}
-			XIDMessage* msg = xidmsg[xid];
+			XIDMessage* msg = xidsig_tx(xid, XIDMessageType.ul);
 			*cast(ulong*)msg.outbuf = msgdata;
 			msg.ty = XIDMessageType.complete;
 			system_sleep_gen += 1;
@@ -145,26 +169,14 @@ void syscall_handler(ulong sys, Regs* r) {
 		}
 		case 0x0b: {
 			ulong xid = r.rdi;
-			if (!(xid in xidmsg))
-				xidmsg[xid] = null;
-			
-			while (xidmsg[xid]) {
-				current.sleepgen = system_sleep_gen + 1;
-				asm { int 0xfe; }
-			}
+
 			XIDMessage msg;
 			msg.ty = XIDMessageType.ul;
+
 			ulong dat = 0;
 			msg.outbuf = &dat;
-			xidmsg[xid] = &msg;
-			system_sleep_gen += 1;
-			while (msg.ty == XIDMessageType.ul) {
-				current.sleepgen = system_sleep_gen + 1;
-				asm { int 0xfe; }
-			}
-			xidmsg[xid] = null;
-			system_sleep_gen += 1;
-
+			xidsig_rx(xid, &msg);
+			
 			r.rax = dat;
 			break;
 		}

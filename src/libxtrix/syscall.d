@@ -105,6 +105,18 @@ void sys_close(ulong xid) {
 // - (05) sys_send_region(xid, addr, len)
 // - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
 // - (07) sys_send_data(xid, dataptr, len)
+error sys_send_data(ulong xid, void* dataptr, ulong len) {
+	error e;
+	asm {
+		mov RDI, xid;
+		mov RSI, dataptr;
+		mov RDX, len;
+		int 0x17;
+		mov e, RAX;
+	}
+	errno = e;
+	return e;
+}
 // - (08) sys_recv_data_len(xid) -> len
 // - (09) sys_recv_data(xid, dataptr, len) -> 0=success 1=fail
 // - (0a) sys_send_ul(xid, ulong)
