@@ -36,6 +36,11 @@ actions:
       _: build/libxk.o
       u-ldc: src/libxk/*.d
 
+  $libsrpc:
+    prelink:
+      _: build/libsrpc.o
+      u-ldc: src/libsrpc/*.d
+
   $libxtrix:
     prelink:
       _: build/libxtrix.o
@@ -50,6 +55,7 @@ actions:
       _: build/init.elf
       noop: $libxtrix
       noop: $libxk
+      noop: $libsrpc
       u-ldc: src/progs/init/*.d
     ld:
       _: build/hello.elf

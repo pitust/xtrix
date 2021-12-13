@@ -106,46 +106,29 @@ void sys_close(ulong xid) {
 // - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
 // - (07) sys_send_data(xid, dataptr, len)
 error sys_send_data(ulong xid, void* dataptr, ulong len) {
-	error e;
+	long res;
 	asm {
 		mov RDI, xid;
 		mov RSI, dataptr;
 		mov RDX, len;
 		int 0x17;
-		mov e, RAX;
+		mov res, RAX;
 	}
-	errno = e;
-	return e;
+	errno = res;
+	return cast(error)res;
 }
-// - (08) sys_recv_data_len(xid) -> len
-// - (09) sys_recv_data(xid, dataptr, len) -> 0=success 1=fail
-// - (0a) sys_send_ul(xid, ulong)
-error sys_send_ul(ulong xid, ulong ul) {
-	error e;
+// - (09) sys_recv_data(xid, dataptr, len)
+error sys_recv_data(ulong xid, void* dataptr, ulong len) {
+	long res;
 	asm {
 		mov RDI, xid;
-		mov RSI, ul;
-		int 0x1a;
-		mov e, RAX;
+		mov RSI, dataptr;
+		mov RDX, len;
+		int 0x19;
+		mov res, RAX;
 	}
-	errno = e;
-	return e;
-}
-// - (0b) sys_recv_ul(xid) -> ulong
-ulong sys_recv_ul(ulong xid) {
-	error e;
-	ulong ul;
-	asm {
-		mov RDI, xid;
-		int 0x1b;
-		mov e, RAX;
-		mov ul, RAX;
-	}
-	if (e < 0) {
-		ul = 0;
-		errno = e;
-	}
-	return ul;
+	errno = res;
+	return cast(error)res;
 }
 // - (0c) sys_send_barrier(xid)
 // - (0d) sys_recv_barrier(xid)

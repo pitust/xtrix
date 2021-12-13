@@ -76,8 +76,10 @@ extern(C) int main(string[] args) {
 	anoerr("sys_open_pipe");
 
 	printf("pipe: {x}", xid);
-	printf("ul: {}", sys_recv_ul(xid));
-	anoerr("sys_recv_ul");
+	ulong u;
+	sys_recv_data(xid, &u, u.sizeof);
+	anoerr("sys_recv_data");
+	printf("ul: {}", u);
 	
 	while (true) {
 		ulong code;

@@ -15,10 +15,7 @@
         - (05) sys_send_region(xid, addr, len)
         - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
         - (07) sys_send_data(xid, dataptr, len)
-        - (08) sys_recv_data_len(xid) -> len
-        - (09) sys_recv_data(xid, dataptr, len) -> 0=success 1=fail
-        - (0a) sys_send_ul(xid, ulong)
-        - (0b) sys_recv_ul(xid) -> ulong
+        - (09) sys_recv_data(xid, dataptr, len)
         - (0c) sys_send_barrier(xid)
         - (0d) sys_recv_barrier(xid)
      - Process stuff
@@ -31,5 +28,7 @@
         - (15) sys_wait(pid) -> pid, resulting code
         - (16) sys_waitfor(pid) -> resulting code
 	 - IO port shit
-	 	- (17) sys_inb(port) -> byte
-		- (18) sys_outb(port, byte)
+	 	- (0a) sys_inb(port) -> byte
+		- (0b) sys_outb(port, byte)
+
+free syscall numbers: 08

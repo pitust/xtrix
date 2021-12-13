@@ -38,50 +38,62 @@ enum error : long {
 	EINVAL = -5,
 }
 
-enum XIDMessageType {
-	complete,
-	ul
-}
+struct FixedQueue {
+	ubyte[4096]* _data;
+	ulong read = 0, write = 0, unread = 0;
+	ubyte[] data() {
+		return (*_data);
+	}
 
-struct XIDMessage {
-	XIDMessageType ty;
-	void* outbuf;
-}
+	static FixedQueue* allocate() {
+		FixedQueue* q = alloc!(FixedQueue)();
+		q._data = alloc!(ubyte[4096])();
+		return q;
+	}
 
-XIDMessage* xidsig_tx(ulong xid, XIDMessageType mt) {
-	while (!(xid in xidmsg)) {
-		current.sleepgen = system_sleep_gen + 1;
-		asm { int 0xfe; }
+	void do_read(ubyte* outbuf, ulong count) {
+		while (count > 0) {
+			*outbuf++ = do_read();
+			count--;
+		}
 	}
-	while (!xidmsg[xid] || xidmsg[xid].ty != mt) {
-		current.sleepgen = system_sleep_gen + 1;
-		asm { int 0xfe; }
+	ubyte do_read() {
+		while (!unread) {
+			current.sleepgen += 1;
+			asm { int 0xfe; }
+		}
+		ubyte data = data[read];
+		read = (read + 1) & 0x0fff;
+		if (unread == 4096) {
+			system_sleep_gen += 1; // wake the write side from sleep
+		}
+		unread--;
+		return data;
 	}
-	return xidmsg[xid];
-}
-void xidsig_rx(ulong xid, XIDMessage* msg) {
-	if (!(xid in xidmsg))
-		xidmsg[xid] = null;
-	
-	while (xidmsg[xid]) {
-		current.sleepgen = system_sleep_gen + 1;
-		asm { int 0xfe; }
+
+	void do_write(ubyte* inbuf, ulong count) {
+		while (count > 0) {
+			do_write(*inbuf++);
+			count--;
+		}
 	}
-	xidmsg[xid] = msg;
-	system_sleep_gen += 1;
-	while (msg.ty == XIDMessageType.ul) {
-		current.sleepgen = system_sleep_gen + 1;
-		asm { int 0xfe; }
+	void do_write(ubyte b) {
+		while (unread == 4096) {
+			current.sleepgen += 1;
+			asm { int 0xfe; }
+		}
+		if (unread == 0) system_sleep_gen += 1; // wake the read side from sleep
+		data[write] = b;
+		write = (write + 1) & 0x0fff;
+		unread++;
 	}
-	xidmsg[xid] = null;
-	system_sleep_gen += 1;
 }
 
 __gshared char[8192] ke_log_buffer;
 __gshared ulong pid_start = 1;
 __gshared HashMap!(ulong, Thread*) procs;
 __gshared HashMap!(ulong, ulong*) xid_servers;
-__gshared HashMap!(ulong, XIDMessage*) xidmsg;
+__gshared HashMap!(ulong, FixedQueue*) xidmsg;
 
 void syscall_handler(ulong sys, Regs* r) {
 	procs[current.pid] = current; // todo: this is overly heavy-handed
@@ -156,28 +168,34 @@ void syscall_handler(ulong sys, Regs* r) {
 			break;
 		}
 		case 0x07: {
-
-		}
-		case 0x0a: {
-			ulong xid = r.rdi; ulong msgdata = r.rsi;
-			XIDMessage* msg = xidsig_tx(xid, XIDMessageType.ul);
-			*cast(ulong*)msg.outbuf = msgdata;
-			msg.ty = XIDMessageType.complete;
-			system_sleep_gen += 1;
+			ulong xid = r.rdi, dataptr = r.rsi, len = r.rdx;
+			FixedQueue* queue;
+			if (xid in xidmsg) {
+				queue = xidmsg[xid];
+			} else {
+				queue = xidmsg[xid] = FixedQueue.allocate();
+			}
+			foreach (idx; 0 .. len) {
+				ubyte b;
+				current.vm.copy_out_of(dataptr + idx, &b, 1);
+				queue.do_write(b);
+			}
 			r.rax = 0;
 			break;
 		}
-		case 0x0b: {
-			ulong xid = r.rdi;
-
-			XIDMessage msg;
-			msg.ty = XIDMessageType.ul;
-
-			ulong dat = 0;
-			msg.outbuf = &dat;
-			xidsig_rx(xid, &msg);
-			
-			r.rax = dat;
+		case 0x09: {
+			ulong xid = r.rdi, dataptr = r.rsi, len = r.rdx;
+			FixedQueue* queue;
+			if (xid in xidmsg) {
+				queue = xidmsg[xid];
+			} else {
+				queue = xidmsg[xid] = FixedQueue.allocate();
+			}
+			foreach (idx; 0 .. len) {
+				ubyte b = queue.do_read();
+				current.vm.copy_into(dataptr + idx, &b, 1);
+			}
+			r.rax = 0;
 			break;
 		}
 		case 0x10: {
