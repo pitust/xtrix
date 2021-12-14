@@ -161,14 +161,12 @@ template bind_to(Obj, string fn) {
 	        foreach (i; 0 .. omessage.size) {
 	            printf("i: {x}", omessage.data[i]);
 	        }
-	        XHandle mr = KeAllocateMemRefObject(omessage.data, omessage.size).aok("Cannot create message!");
-	        XHandle result = KeInvoke(cast_this.handle, mr).aok("Remote procedure invocation failed.");
-	        mr.release();
-	        if (result.type_of() != type.memref) assert(false, "Remote procedure invocation did not return a memref.");
-	        ulong rsize = KeGetMemObjectSize(result);
-	        void* data = malloc(rsize);
-	        assert_success(KeReadMemory(result, 0, rsize, data));
-	        result.release();
+			ulong rsiz = omessage.size;
+			sys_send_data(cast_this.commxid, &rsiz, 8);
+			sys_send_data(cast_this.commxid, omessage.data, rsiz);
+			sys_recv_data(cast_this.commxid, &rsiz, 8);
+	        void* data = malloc(rsiz);
+	        sys_recv_data(cast_this.commxid, data, rsiz);
 
 	        assert(false, "RPC: todo invoke " ~ fn ~ "!");
 	    }

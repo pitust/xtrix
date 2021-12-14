@@ -40,7 +40,7 @@ int _main(ulong argc, char** argv) {
 	// sys_close(xid);
 	// anoerr("sys_close");
 	
-	// InitSRPC* conn = connect!(InitSRPC)(0x1314d0deda64c37a);
+	InitSRPC* conn = connect!(InitSRPC)(0x1314d0deda64c37a);
 
 	return 0;
 }

@@ -96,6 +96,15 @@ void outb(ushort port, ubyte value) {
 		out DX, AL;
 	}
 }
+ubyte inb(ushort port) {
+	ubyte value;
+	asm {
+		mov DX, port;
+		in AL, DX;
+		mov AL, value;
+	}
+	return value;
+}
 private uint colorchr(char c) {
 	if ((c & 0x60) == 0x60) c ^= 0x20;
 	if ((c >= 'A' && c <= 'Z') || (c == '0')) {

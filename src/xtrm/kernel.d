@@ -18,7 +18,7 @@ module xtrm.kernel;
 import xtrm.io;
 import xtrm.rng;
 import xtrm.util;
-import xtrm.util;
+import xtrm.kdbg;
 import xtrm.memory;
 import xtrm.obj.vm;
 import xtrm.stivale;
@@ -114,7 +114,13 @@ extern (C) void kmain(StivaleStruct* struc) {
 	_printf("Initializing the local APIC...        "); init_lapic(); printk("\x1b[g][done]");
 	_printf("Initializing the GDT...               "); init_gdt(); printk("\x1b[g][done]");
 	_printf("Initializing the IDT...               "); init_idt(); printk("\x1b[g][done]");
-
+	_printf("Initializing the Serial ports...      "); 
+	if (serial_init()) {
+		printk("\x1b[r][failed]");
+		printk("warning: kdbg cannot function");
+	} else {
+		printk("\x1b[g][done]");
+	}
 	memory_stats();
 
 	Regs r;

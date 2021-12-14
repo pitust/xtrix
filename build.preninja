@@ -7,7 +7,7 @@ rules:
     k-clang:
       in: .c
       out: .o
-      cmd: clang $k-cflags $cflags $cnosse -o $out $in -c
+      cmd: clang $k-cflags $cflags $cnosse -o $out $in -c -Iinc
     u-ldc:
       in: .d
       out: -u.o

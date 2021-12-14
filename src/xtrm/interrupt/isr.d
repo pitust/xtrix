@@ -21,11 +21,13 @@ import xtrm.user.sched;
 import xtrm.user.syscalls;
 import xtrm.interrupt.regs;
 import xtrm.interrupt.lapic;
+import xtrm.kdbg;
 
 __gshared bool is_real_hw = false;
 
 extern(C) void interrupt_handler(Regs* r) {
 	sched_save_preirq(r);
+	kdbg_step();
 	if (r.isr == 0xd && r.cs == 0x1b && ((r.error) & 0x7) == 2) {
 		// the first syscall is always coming from init(1) and is always a ke_log
 		// this checks if we are on real hw or qemu.
