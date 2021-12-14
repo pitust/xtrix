@@ -1,6 +1,7 @@
 module xtrm.kdbg;
 
 import xtrm.io;
+import xtrm.user.syscalls;
 
 enum COM1 = 0x3F8;
 
@@ -46,25 +47,92 @@ private __gshared bool _serial_ssfn = false;
 private extern(C) bool write_serial(char a) {
 	if (!_serial_ssfn) return false;
 	while (is_transmit_empty() == 0) {}
-	outb(COM1,a);
+	outb(COM1, a);
 	return true;
+}
+private void txser(char c) {
+	while (is_transmit_empty() == 0) {}
+	outb(COM1, c);
+}
+private char rxser() {
+	while (!serial_received()) {}
+	return read_serial();
 }
 
 __gshared char[64] buf;
 __gshared ulong idx = 0;
 
 private void kdbg_print_serial(Args...)(Args args) {
-	_printf(args);
+	_serial_ssfn = true;
+	serial_printf(args);
+	_serial_ssfn = false;
 }
+
+struct Task {
+	string name;
+	void function(char[] cmdbuf) exec;
+}
+
+void help_task(char[] cmdbuf) {
+	kdbg_print_serial("this is kd, the xtrix kernel debugger. use 'quit' to exit kd\n");
+}
+void _tasklist(char[] cmdbuf) {
+	_serial_ssfn = true;
+	syscalls_task_list();
+	_serial_ssfn = false;
+}
+
+private __gshared immutable(Task)[] task_registry = [
+	Task("help", &help_task),
+	Task("tl", &_tasklist)
+];
+
+private void run_task(char[] cmdbuf) {
+	foreach (ref task; task_registry) {
+		if (cmdbuf[0 .. task.name.length] == task.name) {
+			if (cmdbuf[task.name.length] == 0 || cmdbuf[task.name.length] == ' ') 
+				return task.exec(cmdbuf[task.name.length + 1 .. $]);
+		}
+	}
+	kdbg_print_serial("Unknown command!\n");
+}
+
 void kdbg_attach() {
-	kdbg_print_serial("kd> ");
+	__gshared char[128] cmd;
+	while (true) {
+		kdbg_print_serial("kd> ");
+		ulong off = 0;
+		while (off < 128) {
+			char c = rxser();
+			if (c == '\x1d' || c == '\x04') {
+				if (off == 0) {
+					kdbg_print_serial("\nBye.\n");
+					return;
+				}
+				off = 0;
+				kdbg_print_serial("<lmao>");
+				break;
+			}
+			if (c == '\x1b') { rxser(); rxser(); } // pls be enough
+			txser(c);
+			if (c == '\r') break;
+			cmd[off++] = c;
+		}
+		kdbg_print_serial("\n");
+		if (off == 128) { continue; }
+		if (cmd[0 .. off] == "quit") {
+			kdbg_print_serial("Bye.\n");
+			break;
+		}
+		cmd[off++] = 0;
+		if (off == 1) continue;
+		run_task(cmd);
+	}
 }
 void kdbg_step() {
-	write_serial('x');
 	if (serial_received()) {
 		char c = read_serial();
-		printk("kdbg_step: step {x}", cast(ubyte)c);
-		if (c == /* C-] aka KDI */ '\x1c') {
+		if (c == /* C-] aka KDI */ '\x1d') {
 			kdbg_attach();
 		}
 		buf[idx++ & 0x1f] = c;

@@ -101,7 +101,7 @@ ubyte inb(ushort port) {
 	asm {
 		mov DX, port;
 		in AL, DX;
-		mov AL, value;
+		mov value, AL;
 	}
 	return value;
 }
@@ -203,7 +203,9 @@ private void putc(char c) {
 	}
 	putc_printk_ctx = false;
 }
+private extern(C) bool write_serial(char a);
 private void nographics_putc(char c) {
+	if (write_serial(c)) return;
 	outb(0xe9, c);
 }
 void putchar(char c) {
@@ -439,7 +441,7 @@ void printk(Args...)(string s, Args args) {
 void _printf(Args...)(string s, Args args) {
 	do_printk!(false, Args)(s, args);
 }
-private void serial_printf(Args...)(string s, Args args) {
+void serial_printf(Args...)(string s, Args args) {
 	bool fi = serial_printk_ctx;
 	serial_printk_ctx = true;
 	do_printk!(false, Args)(s, args);

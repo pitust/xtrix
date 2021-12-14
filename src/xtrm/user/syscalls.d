@@ -332,3 +332,43 @@ void syscall_handler(ulong sys, Regs* r) {
 		}
 	}
 }
+
+void syscalls_task_list() {
+	serial_printk(" == task list ==");
+	foreach (pid; 1 .. pid_start + 1) {
+		if (pid !in procs) {
+			continue;
+		}
+		Thread* th = procs[pid];
+		string relsleep = "?";
+		long delta = cast(long)th.sleepgen - cast(long)system_sleep_gen;
+		if (delta == 0) relsleep = "woken";
+		if (delta < 0) relsleep = "running";
+		if (delta > 0) relsleep = "sleeping";
+		serial_printk("    \x1b[y]{}({})\x1b[w_0] {}", th.tag.ptr, pid, th == current ? "(current)" : "");
+		serial_printk("      \x1b[g]: identifiers\x1b[w_0]");
+		serial_printk("        \x1b[b]pid\x1b[w_0]: {}", th.pid);
+		serial_printk("        \x1b[b]ppid\x1b[w_0]: {}", th.ppid);
+		serial_printk("        \x1b[b]uid\x1b[w_0]: {}", th.uid);
+		serial_printk("      \x1b[g]: kernel resources\x1b[w_0]");
+		foreach (i; 0 .. 4) {
+			serial_printk("        \x1b[b]irq stack page {}\x1b[w_0]: {*}", i, phys(th.rsp0_phy[i]));
+		}
+		serial_printk("        \x1b[b]stack map address\x1b[w_0]: {*}", th.rsp0_virt);
+		serial_printk("      \x1b[g]: children wait status\x1b[w_0]");
+		if (th.is_wfor) {
+			if (!th.is_wfor) {
+				serial_printk("        \x1b[b]waiting\x1b[w_0]: yes, unmasked");
+			} else {
+				serial_printk("        \x1b[b]waiting\x1b[w_0]: yes, {}", th.is_wfor);
+			}
+		} else {
+			serial_printk("        \x1b[b]waiting\x1b[w_0]: no");
+		}
+		serial_printk("      \x1b[g]: misc\x1b[w_0]");
+		serial_printk("        \x1b[b]tag\x1b[w_0]: '{}'", th.tag.ptr);
+		serial_printk("        \x1b[b]rip\x1b[w_0]: {*}", th.regs.rip - 2);
+		serial_printk("        \x1b[b]ring\x1b[w_0]: ring{}", th.regs.cs&3);
+		serial_printk("        \x1b[b]sleep state\x1b[w_0]: {} ({})", relsleep, delta);
+	}
+}

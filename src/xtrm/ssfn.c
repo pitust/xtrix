@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <ssfn.h>
 
-
 void ssfnc_do_init(void* src, void* lfb, uint32_t w, uint32_t h, uint32_t p) {
 	ssfn_src = src;
 	ssfn_dst.ptr = lfb;                         /* address of the linear frame buffer */
