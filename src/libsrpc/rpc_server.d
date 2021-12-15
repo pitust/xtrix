@@ -28,22 +28,55 @@ private template itoa(uint n) {
 alias RPCEndpoint = void delegate(ulong commxid, ubyte* data, ulong length, ref ulong offset);
 
 struct RPCListener {
-    HashMap!(string, RPCEndpoint) endpoints;
+	HashMap!(string, RPCEndpoint) endpoints;
 	ulong commid;
 	
 	void attach(ulong id) {
         commid = id;
 	}
 	void loop() {
-		while (true) {
-			ulong sel = 0xffff;
-            ulong commxid = sys_open_pipe(PipeSide.server, commid);
-            ulong siz;
-            sys_recv_data(commxid, &siz, 8);
-            ubyte* data = cast(ubyte*)malloc(siz);
-            sys_recv_data(commxid, data, siz);
-			ulong offset = 0;
-			dispatch(data, siz, offset, commxid);
+		printf("srpc: loop");
+		ulong request_pipe = sys_open_pipe(PipeSide.friendship, 0);
+		anoerr("sys_open_pipe");
+
+		long childpid = sys_fork();
+		if (!childpid) {
+			// child
+			while (true) {
+				ulong commxid = sys_open_pipe(PipeSide.server, commid);
+				printf("srpc/acceptworker: client @ {x}", commxid);
+				if (!sys_fork()) {
+					// child
+					while (true) {
+						ulong siz;
+						sys_recv_data(commxid, &siz, 8);
+						anoerr("sys_recv_data");
+						printf("rx {x} bytes", siz);
+						ubyte* data = cast(ubyte*)malloc(siz);
+						sys_recv_data(commxid, data, siz);
+						printf("srpc/requestworker: got request!");
+
+						sys_send_data(request_pipe, &siz, 8);
+						sys_send_data(request_pipe, &commxid, 8);
+						sys_send_data(request_pipe, data, siz);
+						free(cast(void*)data);
+					}
+				}
+
+			}
+		} else {
+			// parent
+			while (true) {
+				ulong commxid, siz;
+				sys_recv_data(request_pipe, &siz, 8);
+				sys_recv_data(request_pipe, &commxid, 8);
+				ubyte* data = cast(ubyte*)malloc(siz);
+				sys_recv_data(request_pipe, data, siz);
+
+				ulong offset = 0;
+				dispatch(data, siz, offset, commxid);
+				free(cast(void*)data);
+			}
 		}
 	}
 	void dispatch(ubyte* data, ulong length, ref ulong offset, ulong commxid) {
@@ -52,35 +85,35 @@ struct RPCListener {
 	}
 }
 private struct DispatcherWrap(Disp, Tplt, string item) {
-    Disp* d;
-    void wrap(ulong commxid, ubyte* data, ulong length, ref ulong offset) {
-    	alias tpv = __traits(getMember, Tplt, item);
+	Disp* d;
+	void wrap(ulong commxid, ubyte* data, ulong length, ref ulong offset) {
+		alias tpv = __traits(getMember, Tplt, item);
 		Parameters!(tpv) param;
-        static foreach (i; 0 .. param.length) {
-            param[i] = decode!(typeof(param[i]))(data, length, offset);
-        }
+		static foreach (i; 0 .. param.length) {
+			param[i] = decode!(typeof(param[i]))(data, length, offset);
+		}
 		static if (is(ReturnType!tpv == void)) {
-        	__traits(getMember, d, item)(param);
-            ulong len = 0;
-            sys_send_data(commxid, &len, ulong.sizeof);
+			__traits(getMember, d, item)(param);
+			ulong len = 0;
+			sys_send_data(commxid, &len, ulong.sizeof);
 		} else {
 			ReturnType!tpv ret = __traits(getMember, d, item)(param);
 			auto wrap = encode(ret);
-            sys_send_data(commxid, &wrap.size, ulong.sizeof);
-            sys_send_data(commxid, wrap.data, wrap.size);
+			sys_send_data(commxid, &wrap.size, ulong.sizeof);
+			sys_send_data(commxid, wrap.data, wrap.size);
 		}
-    }
+	}
 }
 
 RPCListener publish_srpc(Template, Dispatch)(Dispatch* disp) {
-    // checks
-    static assert(!__traits(compiles, Template()),
-        "Type " ~ Template.stringof ~ " must have a disabled constructor because it is not described correctly by its members");
+	// checks
+	static assert(!__traits(compiles, Template()),
+			"Type " ~ Template.stringof ~ " must have a disabled constructor because it is not described correctly by its members");
 
-    RPCListener l = RPCListener.init;
-    static foreach (mname; __traits(allMembers, Template)) {{
-    	static if (mname != "close") {
-	    	static if (!(mname[0] == '_' && mname[1] == '_')) {
+	RPCListener l = RPCListener.init;
+	static foreach (mname; __traits(allMembers, Template)) {{
+		static if (mname != "close") {
+			static if (!(mname[0] == '_' && mname[1] == '_')) {
 				RPCEndpoint del = &alloc!(DispatcherWrap!(Dispatch, Template, mname))(disp).wrap;
 				l.endpoints[mname] = del;
 			}
@@ -167,8 +200,9 @@ template bind_to(Obj, string fn) {
 			sys_recv_data(cast_this.commxid, &rsiz, 8);
 	        void* data = malloc(rsiz);
 	        sys_recv_data(cast_this.commxid, data, rsiz);
-
-	        assert(false, "RPC: todo invoke " ~ fn ~ "!");
+			
+			ulong offset = 0;
+			return decode!(ReturnType!target_fn)(cast(ubyte*)data, rsiz, offset);
 	    }
     }
 }

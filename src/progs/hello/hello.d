@@ -41,6 +41,7 @@ int _main(ulong argc, char** argv) {
 	// anoerr("sys_close");
 	
 	InitSRPC* conn = connect!(InitSRPC)(0x1314d0deda64c37a);
+	conn.hello();
 
 	return 0;
 }

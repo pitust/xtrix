@@ -6,6 +6,7 @@ import std.typecons;
 import libxk.hashmap;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
+import progs.init.init_srpc;
 import libxtrix.libc.string;
 
 struct phy { ulong base; mixin Proxy!(base); }
@@ -80,7 +81,9 @@ extern(C) int main(string[] args) {
 	sys_recv_data(xid, &u, u.sizeof);
 	anoerr("sys_recv_data");
 	printf("ul: {}", u);
-	
+
+	rpc_publish();
+
 	while (true) {
 		ulong code;
 		long stat = sys_wait(code);

@@ -125,12 +125,18 @@ void syscall_handler(ulong sys, Regs* r) {
 		case 0x03: {
 			ulong pipeside = r.rdi; ulong pipeid = r.rsi;
 
-			if (pipeside > 1) {
+			if (pipeside > 2) {
 				printk("ps: {x}", pipeside);
 				r.rax = error.EINVAL;
 				return;
 			}
+			if (pipeside == 2) {
+				ulong xid = (random_ulong() << 32) ^ random_ulong() ^ (random_ulong() >> 32);
+				xid &= 0xffff_ffff_ffff;
 
+				r.rax = xid;
+				return;
+			}
 			if (!pipeside) {
 				// client
 				ulong xid = (random_ulong() << 32) ^ random_ulong() ^ (random_ulong() >> 32);

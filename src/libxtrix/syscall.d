@@ -79,7 +79,8 @@ long sys_phyread(ulong phy, void* virt, ulong len) {
 	return res;
 }
 
-enum PipeSide : ulong { client = 0, server = 1 }
+// friendship pipes are anonymous
+enum PipeSide : ulong { client = 0, server = 1, friendship = 2 }
 // - (03) sys_open_pipe(side: 0=client 1=server, chan) -> xid
 long sys_open_pipe(PipeSide side, ulong chan) {
 	long xid;

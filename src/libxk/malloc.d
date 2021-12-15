@@ -10,8 +10,7 @@ T* alloc(T, Args...)(Args args) {
 	return val;
 }
 
-void free(T)(T* data) {
+void release(T)(T* data) {
 	destroy!(false)(data);
 	libxk_sized_free(T.sizeof, cast(void*)data);
 }
-alias release = free;
