@@ -351,7 +351,7 @@ void syscalls_task_list() {
 		if (delta == 0) relsleep = "woken";
 		if (delta < 0) relsleep = "running";
 		if (delta > 0) relsleep = "sleeping";
-		serial_printk("    \x1b[y]{}({})\x1b[w_0] {}", th.tag.ptr, pid, th == current ? "(current)" : "");
+		serial_printk("    \x1b[y]{}({})\x1b[w_0] {}", th.tag.ptr, pid, th == current ? "(active)" : "");
 		serial_printk("      \x1b[g]: identifiers\x1b[w_0]");
 		serial_printk("        \x1b[b]pid\x1b[w_0]: {}", th.pid);
 		serial_printk("        \x1b[b]ppid\x1b[w_0]: {}", th.ppid);

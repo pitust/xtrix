@@ -100,7 +100,7 @@ private void run_task(char[] cmdbuf) {
 void kdbg_attach() {
 	__gshared char[128] cmd;
 	while (true) {
-		kdbg_print_serial("kd> ");
+		kdbg_print_serial("\x1b[p]kd> \x1b[w_0]");
 		ulong off = 0;
 		while (off < 128) {
 			char c = rxser();
@@ -110,7 +110,6 @@ void kdbg_attach() {
 					return;
 				}
 				off = 0;
-				kdbg_print_serial("<lmao>");
 				break;
 			}
 			if (c == '\x1b') { rxser(); rxser(); } // pls be enough
