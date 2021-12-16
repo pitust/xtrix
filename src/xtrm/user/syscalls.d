@@ -40,7 +40,7 @@ enum error : long {
 
 struct FixedQueue {
 	ubyte[4096]* _data;
-	ulong read = 0, write = 0, unread = 0;
+	ulong read = 0, write = 0, unread = 0, barrier = 0;
 	ubyte[] data() {
 		return (*_data);
 	}
@@ -189,6 +189,27 @@ void syscall_handler(ulong sys, Regs* r) {
 			r.rax = 0;
 			break;
 		}
+		case 0x08: {
+			ulong xid = r.rdi, dataptrptr = r.rsi, lenptr = r.rdx, rc = r.rcx;
+			FixedQueue* queue;
+			if (xid in xidmsg) {
+				queue = xidmsg[xid];
+			} else {
+				queue = xidmsg[xid] = FixedQueue.allocate();
+			}
+			foreach (bufidx; 0 .. rc) {
+				ulong dataptr, len;
+				current.vm.copy_out_of(dataptrptr + (bufidx << 3), &dataptr, 8);
+				current.vm.copy_out_of(lenptr + (bufidx << 3), &len, 8);
+				foreach (idx; 0 .. len) {
+					ubyte b;
+					current.vm.copy_out_of(dataptr + idx, &b, 1);
+					queue.do_write(b);
+				}
+			}
+			r.rax = 0;
+			break;
+		}
 		case 0x09: {
 			ulong xid = r.rdi, dataptr = r.rsi, len = r.rdx;
 			FixedQueue* queue;
@@ -201,6 +222,40 @@ void syscall_handler(ulong sys, Regs* r) {
 				ubyte b = queue.do_read();
 				current.vm.copy_into(dataptr + idx, &b, 1);
 			}
+			r.rax = 0;
+			break;
+		}
+		case 0xc: {
+			ulong xid = r.rdi;
+			FixedQueue* queue;
+			if (xid in xidmsg) {
+				queue = xidmsg[xid];
+			} else {
+				queue = xidmsg[xid] = FixedQueue.allocate();
+			}
+			queue.barrier++;
+			system_sleep_gen += 1;
+			while (!queue.barrier) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			r.rax = 0;
+			break;
+		}
+		case 0xd: {
+			ulong xid = r.rdi;
+			FixedQueue* queue;
+			if (xid in xidmsg) {
+				queue = xidmsg[xid];
+			} else {
+				queue = xidmsg[xid] = FixedQueue.allocate();
+			}
+			while (!queue.barrier) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			queue.barrier--;
+			system_sleep_gen += 1;
 			r.rax = 0;
 			break;
 		}

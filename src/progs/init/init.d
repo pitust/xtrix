@@ -73,14 +73,6 @@ extern(C) int main(string[] args) {
 		mod = mod_desc.next;
 	}
 
-	long xid = sys_open_pipe(PipeSide.server, 0x4141_4242);
-	anoerr("sys_open_pipe");
-
-	printf("pipe: {x}", xid);
-	ulong u;
-	sys_recv_data(xid, &u, u.sizeof);
-	anoerr("sys_recv_data");
-	printf("ul: {}", u);
 
 	rpc_publish();
 

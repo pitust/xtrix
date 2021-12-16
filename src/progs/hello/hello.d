@@ -27,18 +27,6 @@ import progs.init.init_srpc;
 pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
-	long xid = sys_open_pipe(PipeSide.client, 0x4141_4242);
-	anoerr("sys_open_pipe");
-
-	printf("pipe: {x}", xid);
-	// ulong[1] data = [69_420];
-	// sys_send_data(xid, cast(void*)data.ptr, 8);
-	ulong u = 1337;
-	sys_send_data(xid, &u, u.sizeof);
-	printf("ul: {}", u);
-	anoerr("sys_send_data");
-	// sys_close(xid);
-	// anoerr("sys_close");
 	
 	InitSRPC* conn = connect!(InitSRPC)(0x1314d0deda64c37a);
 	conn.hello();

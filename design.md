@@ -15,6 +15,7 @@
         - (05) sys_send_region(xid, addr, len)
         - (06) sys_recv_region(xid, addr, len) -> 0=success 1=fail
         - (07) sys_send_data(xid, dataptr, len)
+        - (08) sys_send_vectored(xid, dataptr*, len*, rcount)
         - (09) sys_recv_data(xid, dataptr, len)
         - (0c) sys_send_barrier(xid)
         - (0d) sys_recv_barrier(xid)

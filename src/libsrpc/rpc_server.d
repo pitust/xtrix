@@ -55,10 +55,15 @@ struct RPCListener {
 						ubyte* data = cast(ubyte*)malloc(siz);
 						sys_recv_data(commxid, data, siz);
 						printf("srpc/requestworker: got request!");
+						
+						void*[3] datavec = [cast(void*)&siz, cast(void*)&commxid, cast(void*)data];
+						ulong[3] lenvec = [8, 8, siz];
+						sys_send_barrier(commxid);
+						sys_send_vectored(request_pipe, datavec, lenvec);
+						anoerr("sys_send_vectored");
+						sys_recv_barrier(commxid);
+						printf("== rq done");
 
-						sys_send_data(request_pipe, &siz, 8);
-						sys_send_data(request_pipe, &commxid, 8);
-						sys_send_data(request_pipe, data, siz);
 						free(cast(void*)data);
 					}
 				}
@@ -197,9 +202,12 @@ template bind_to(Obj, string fn) {
 			ulong rsiz = omessage.size;
 			sys_send_data(cast_this.commxid, &rsiz, 8);
 			sys_send_data(cast_this.commxid, omessage.data, rsiz);
+			sys_recv_barrier(cast_this.commxid);
+			printf("== rq done (c)");
 			sys_recv_data(cast_this.commxid, &rsiz, 8);
 	        void* data = malloc(rsiz);
 	        sys_recv_data(cast_this.commxid, data, rsiz);
+			sys_send_barrier(cast_this.commxid);
 			
 			ulong offset = 0;
 			return decode!(ReturnType!target_fn)(cast(ubyte*)data, rsiz, offset);
