@@ -50,7 +50,6 @@ T decode(T)(ubyte* payload, ulong length, ref ulong offset) {
 		arr.reserve(len);
 
 		foreach (i; 0 .. len) {
-			printf("a: {}/{}", offset, length);
 			arr.append(decode!U(payload, length, offset));
 		}
 		return arr;

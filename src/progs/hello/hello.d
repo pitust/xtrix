@@ -30,6 +30,10 @@ int _main(ulong argc, char** argv) {
 	
 	InitSRPC* conn = connect!(InitSRPC)(0x1314d0deda64c37a);
 	conn.hello();
-
+	printf("counter [0]: {}", conn.get());
+	conn.set(69);
+	printf("counter [69]: {}", conn.update(420));
+	printf("counter [420]: {}", conn.update(0));
+	conn.close();
 	return 0;
 }

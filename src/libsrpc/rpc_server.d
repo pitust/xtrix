@@ -35,7 +35,6 @@ struct RPCListener {
         commid = id;
 	}
 	void loop() {
-		printf("srpc: loop");
 		ulong request_pipe = sys_open_pipe(PipeSide.friendship, 0);
 		anoerr("sys_open_pipe");
 
@@ -44,17 +43,14 @@ struct RPCListener {
 			// child
 			while (true) {
 				ulong commxid = sys_open_pipe(PipeSide.server, commid);
-				printf("srpc/acceptworker: client @ {x}", commxid);
 				if (!sys_fork()) {
 					// child
 					while (true) {
 						ulong siz;
 						sys_recv_data(commxid, &siz, 8);
 						anoerr("sys_recv_data");
-						printf("rx {x} bytes", siz);
 						ubyte* data = cast(ubyte*)malloc(siz);
 						sys_recv_data(commxid, data, siz);
-						printf("srpc/requestworker: got request!");
 						
 						void*[3] datavec = [cast(void*)&siz, cast(void*)&commxid, cast(void*)data];
 						ulong[3] lenvec = [8, 8, siz];
@@ -62,7 +58,7 @@ struct RPCListener {
 						sys_send_vectored(request_pipe, datavec, lenvec);
 						anoerr("sys_send_vectored");
 						sys_recv_barrier(commxid);
-						printf("== rq done");
+						sys_recv_barrier(request_pipe);
 
 						free(cast(void*)data);
 					}
@@ -81,6 +77,7 @@ struct RPCListener {
 				ulong offset = 0;
 				dispatch(data, siz, offset, commxid);
 				free(cast(void*)data);
+				sys_send_barrier(request_pipe);
 			}
 		}
 	}
@@ -184,26 +181,27 @@ template bind_to(Obj, string fn) {
 
     pragma(mangle, mangled_fn_name!(Obj, fn)()) extern(C)
     ReturnType!target_fn bind_to(Obj* the_this, Parameters!target_fn args) {
+    	SRPCDispatchTarget* cast_this = cast(SRPCDispatchTarget*)the_this;
+	    assert(the_this, "this is null on SRPC method " ~ Obj.stringof ~ "." ~ fn);
+    	assert(cast_this.magic == SRPC_CHAN, "Invalid magic for the conn.");
     	static if (fn == "close") {
-    		assert(false, "todo: close channels");
+    		ByteBuffer msg = encode(fn);
+			sys_send_data(cast_this.commxid, &msg.size, 8);
+			sys_send_data(cast_this.commxid, msg.data, msg.size);
+			sys_close(cast_this.commxid);
+			free(cast_this);
+			return;
     	} else {
-    		SRPCDispatchTarget* cast_this = cast(SRPCDispatchTarget*)the_this;
-	    	assert(the_this, "this is null on SRPC method " ~ Obj.stringof ~ "." ~ fn);
-    		assert(cast_this.magic == SRPC_CHAN, "Invalid magic for the conn.");
 	        ByteBuffer omessage;
 	        omessage << encode(fn);
 	        static foreach (arg; args) {{
 	            omessage << encode(arg);
 	        }}
 
-	        foreach (i; 0 .. omessage.size) {
-	            printf("i: {x}", omessage.data[i]);
-	        }
 			ulong rsiz = omessage.size;
 			sys_send_data(cast_this.commxid, &rsiz, 8);
 			sys_send_data(cast_this.commxid, omessage.data, rsiz);
 			sys_recv_barrier(cast_this.commxid);
-			printf("== rq done (c)");
 			sys_recv_data(cast_this.commxid, &rsiz, 8);
 	        void* data = malloc(rsiz);
 	        sys_recv_data(cast_this.commxid, data, rsiz);

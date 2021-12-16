@@ -95,9 +95,43 @@ __gshared HashMap!(ulong, Thread*) procs;
 __gshared HashMap!(ulong, ulong*) xid_servers;
 __gshared HashMap!(ulong, FixedQueue*) xidmsg;
 
+
+__gshared immutable(string)[] syscall_names = [
+	"sys_dbglog",
+	"sys_mmap",
+	"sys_phymap",
+	"sys_open_pipe",
+	"sys_close",
+	"sys_send_region",
+	"sys_recv_region",
+	"sys_send_data",
+	"sys_send_vectored",
+	"sys_recv_data",
+	"sys_inb",
+	"sys_outb",
+	"sys_send_barrier",
+	"sys_recv_barrier",
+	"sys_getpid",
+	"sys_getuid",
+	"sys_fork",
+	"sys_exec",
+	"sys_setuid",
+	"sys_phyread",
+	"sys_exit",
+	"sys_wait",
+	"sys_waitfor",
+];
+enum DO_STRACE = false;
+__gshared ulong cont_sys_complete = 0;
 void syscall_handler(ulong sys, Regs* r) {
 	procs[current.pid] = current; // todo: this is overly heavy-handed
 	r.rax = -9999;
+	ulong _csc = ++cont_sys_complete;
+	static if (DO_STRACE) { if (sys != 0) {
+		serial_printk(
+				"\x1b[r][{}]\x1b[w_0] \x1b[p]{}({})\x1b[w_0] \x1b[b]{}\x1b[w_0](\x1b[g]{x}\x1b[w_0])",
+				_csc, current.tag.ptr, current.pid, syscall_names[sys], r.rdi);
+	} }
 	switch (sys) {
 		case 0x00: {
 			ulong offset;
@@ -128,14 +162,14 @@ void syscall_handler(ulong sys, Regs* r) {
 			if (pipeside > 2) {
 				printk("ps: {x}", pipeside);
 				r.rax = error.EINVAL;
-				return;
+				break;
 			}
 			if (pipeside == 2) {
 				ulong xid = (random_ulong() << 32) ^ random_ulong() ^ (random_ulong() >> 32);
 				xid &= 0xffff_ffff_ffff;
 
 				r.rax = xid;
-				return;
+				break;
 			}
 			if (!pipeside) {
 				// client
@@ -146,11 +180,12 @@ void syscall_handler(ulong sys, Regs* r) {
 						*xid_servers[pipeid] = xid;
 						r.rax = xid;
 						system_sleep_gen += 1;
-						return;
+						break;
 					}
 					current.sleepgen = system_sleep_gen + 1;
 					asm { int 0xfe; }
 				}
+				break;
 			} else {
 				// server
 				while (pipeid in xid_servers && xid_servers[pipeid]) {
@@ -169,7 +204,7 @@ void syscall_handler(ulong sys, Regs* r) {
 
 				assert(cid, "no cid set!");
 				r.rax = cid;
-				return;
+				break;
 			}
 			break;
 		}
@@ -235,7 +270,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			}
 			queue.barrier++;
 			system_sleep_gen += 1;
-			while (!queue.barrier) {
+			while (queue.barrier) {
 				current.sleepgen = system_sleep_gen + 1;
 				asm { int 0xfe; }
 			}
@@ -384,7 +419,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			}
 			r.rax = current.waitpid;
 			r.rbx = current.waitcode;
-			return;
+			break;
 		}
 		default: {
 			printk("\x1b[y]{}({})\x1b[w_0] enosys {x}", current.tag.ptr, current.pid, sys);
@@ -392,6 +427,9 @@ void syscall_handler(ulong sys, Regs* r) {
 			break;
 		}
 	}
+	static if (DO_STRACE) { if (_csc != cont_sys_complete) {
+		serial_printk("\x1b[r]{}\x1b[w_0] complete", _csc);
+	} }
 }
 
 void syscalls_task_list() {
