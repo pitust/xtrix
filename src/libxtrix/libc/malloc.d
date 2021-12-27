@@ -99,12 +99,33 @@ extern(C) void free(void* pointer) {
 	if (pointer == null) return;
 
 	ulong ptr = cast(ulong)pointer;
+	if (ptr < 0x9d000000000) {
+		printf("invalid free!");
+		return;
+	}
 	ulong maskPointer = getSizemapAddress(ptr);
+	if (maskPointer < top_sizemap_paged_address) {
+		printf("invalid free!");
+		return;
+	}
 	ubyte bucket = (cast(ubyte*)maskPointer)[0];
 	ubyte mode = (cast(ubyte*)maskPointer)[1];
 	ulong size = bucketSizes[bucket];
 	memset(cast(byte*)ptr, 0xe1, size);
 	addTargetSliceToBucket(ptr, bucket);
+}
+extern(C) ulong malloc_size(void* pointer) {
+	// some c programs rely on free(null) being fine
+	ulong ptr = cast(ulong)pointer;
+	if (ptr < 0x9d000000000) return 0;
+	ulong maskPointer = getSizemapAddress(ptr);
+	if (maskPointer < top_sizemap_paged_address) {
+		return 0;
+	}
+	ubyte bucket = (cast(ubyte*)maskPointer)[0];
+	ubyte mode = (cast(ubyte*)maskPointer)[1];
+	ulong size = bucketSizes[bucket];
+	return size;
 }
 
 extern(C) void libxk_sized_free(ulong size, void* pointer) { free(pointer); }

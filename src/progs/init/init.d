@@ -73,9 +73,6 @@ extern(C) int main(string[] args) {
 		mod = mod_desc.next;
 	}
 
-
-	rpc_publish();
-
 	while (true) {
 		ulong code;
 		long stat = sys_wait(code);

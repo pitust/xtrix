@@ -51,6 +51,8 @@ void _pvalue(T)(T value) {
 		else if (printmode == 'p') { base = 16; prefix = "0x"; pad = 16; }
 		else assertf(false, "Unknown print mode {}", printmode);
 		sprinti(value, base, pad, "0", prefix, &putch, "", "", "", "", "");
+	} else static if (is(T == void*)) {
+		sprinti(cast(ulong)value, 16,615, "0", "0x", &putch, "", "", "", "", "");
 	} else static if (is(T == bool)) {
 		_pvalue(value ? "true" : "false");
 	} else static if (is(T == string)) {

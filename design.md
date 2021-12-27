@@ -17,8 +17,7 @@
         - (07) sys_send_data(xid, dataptr, len)
         - (08) sys_send_vectored(xid, dataptr*, len*, rcount)
         - (09) sys_recv_data(xid, dataptr, len)
-        - (0c) sys_send_barrier(xid)
-        - (0d) sys_recv_barrier(xid)
+        - (0c) sys_clean_exit()
      - Process stuff
         - (0e) sys_getpid() -> pid
         - (0f) sys_getuid() -> uid
@@ -32,4 +31,4 @@
 	 	- (0a) sys_inb(port) -> byte
 		- (0b) sys_outb(port, byte)
 
-free syscall numbers: 08
+free syscall numbers: 08, 0d

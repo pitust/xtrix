@@ -1,4 +1,4 @@
-// libxk hash prefix tree
+// libxk string-keyed prefix tree
 // Copyright (C) 2021 pitust <piotr@stelmaszek.com>
 
 // This program is free software: you can redistribute it and/or modify
@@ -13,28 +13,30 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-module libxk.hashmap;
+module libxk.stringmap;
 
+import libxk.list;
 import libxk.malloc;
 import libxk.cstring;
 import core.lifetime;
 
-private ulong mmhash_mix(ulong value) {
-	// i think this doesn't help memory usage that much lmao
-
-	// value ^= value >> 33;
-	// value *= 0xFF51AFD7ED558CCD;
-	// value ^= value >> 33;
-	// value *= 0xC4CEB9FE1A85EC53;
-	// value ^= value >> 33;
-	return value;
+private ulong strhash(string s) {
+	ulong l = 0;
+	foreach (c; s) {
+		if ((l >> (64-8))) {
+			l ^= (l >> (64 - 8));
+		}
+		l <<= 8;
+		l |= c;
+	}
+	return l;
 }
 
-struct HashMap(K, V) {
+struct StringMap(V) {
 	Item root;
 
 	struct ChainItem {
-		K key;
+		List!char key;
 		V value;
 		bool hasInitializedValue;
 		ChainItem* next;
@@ -47,8 +49,8 @@ struct HashMap(K, V) {
 		}
 	}
 
-	private ChainItem* getItemForK(const ref K k, bool init) {
-		ulong index = mmhash_mix(hashOf(k));
+	private ChainItem* getItemForK(const ref string k, bool init) {
+		ulong index = strhash(k);
 		ulong shift = 0;
 		Item* cur = &root;
 		while (shift < 64) {
@@ -65,7 +67,7 @@ struct HashMap(K, V) {
 		ChainItem* cit = cur.ci;
 		ChainItem** citp = &cur.ci;
 		while (cit) {
-			if (cit.key == k)
+			if (cit.key.to_slice() == k)
 				return cit;
 			citp = &cit.next;
 			cit = cit.next;
@@ -74,11 +76,11 @@ struct HashMap(K, V) {
 			return null;
 		cit = *citp = cast(ChainItem*) libxk_sized_malloc(ChainItem.sizeof);
 		memset(cast(byte*) cit, 0, ChainItem.sizeof);
-		cit.key = k;
+		foreach (c; k) cit.key.append(c);
 		return cit;
 	}
-	void del(K k) {
-		ulong index = mmhash_mix(hashOf(k));
+	void del(string k) {
+		ulong index = strhash(k);
 		ulong shift = 0;
 		Item* cur = &root;
 		while (shift < 64) {
@@ -96,7 +98,7 @@ struct HashMap(K, V) {
 		cur.ci = null;
 		ChainItem* clist = cit;
 		while (clist) {
-			this[cit.key] = clist.value;
+			this[cast(string)cit.key.to_slice()] = clist.value;
 			clist = clist.next;
 		}
 		clist = cit;
@@ -107,13 +109,13 @@ struct HashMap(K, V) {
 		}
 	}
 
-	ref V opIndex(K index) {
+	ref V opIndex(string index) {
 		ChainItem* ci = getItemForK(index, false);
 		assert(ci, "key does not exist in this hashmap!");
 		return ci.value;
 	}
 
-	auto opIndexAssign(T)(T valueUncast, K index) {
+	auto opIndexAssign(T)(T valueUncast, string index) {
 		ChainItem* ci = getItemForK(index, true);
 		if (ci.hasInitializedValue)
 			ci.value = valueUncast;
@@ -126,8 +128,8 @@ struct HashMap(K, V) {
 
 	auto opBinaryRight(string op, L)(const L lhs) {
 		static if (op == "in") {
-			static assert(is(L == K),
-				"Cannot have key of type " ~ L.stringof ~ " in hashmap " ~ K.stringof ~ " =>" ~ V.stringof);
+			static assert(is(L == string),
+				"Cannot have key of type " ~ L.stringof ~ " in hashmap " ~ string.stringof ~ " =>" ~ V.stringof);
 			ChainItem* ci = getItemForK(lhs, false);
 			return ci != null;
 		} else

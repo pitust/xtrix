@@ -28,12 +28,9 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
-	InitSRPC* conn = connect!(InitSRPC)(0x1314d0deda64c37a);
-	conn.hello();
-	printf("counter [0]: {}", conn.get());
-	conn.set(69);
-	printf("counter [69]: {}", conn.update(420));
-	printf("counter [420]: {}", conn.update(0));
+	InitServerConn* conn = connect!(InitServerConn)(SRPC_FIND);
+	conn.declare("sexd", 69);
+	printf("sexd is available at {}", conn.lookup("sexd"));
 	conn.close();
 	return 0;
 }

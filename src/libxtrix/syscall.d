@@ -28,6 +28,10 @@ enum error : long {
 
 __gshared extern(C) long errno;
 
+long getpipe(long xid, long pipeid) {
+	return xid << 8 | pipeid | (1UL << 63);
+}
+
 void sys_dbglog(const char* str, ulong length) {
 	asm {
 		mov RDI, str;
@@ -149,27 +153,11 @@ error sys_recv_data(ulong xid, void* dataptr, ulong len) {
 	errno = res;
 	return cast(error)res;
 }
-// - (0c) sys_send_barrier(xid)
-error sys_send_barrier(ulong xid) {
-	long res;
+// - (0c) sys_silent_exit()
+void sys_silent_exit() {
 	asm {
-		mov RDI, xid;
 		int 0x1c;
-		mov res, RAX;
 	}
-	errno = res;
-	return cast(error)res;
-}
-// - (0d) sys_recv_barrier(xid)
-error sys_recv_barrier(ulong xid) {
-	long res;
-	asm {
-		mov RDI, xid;
-		int 0x1d;
-		mov res, RAX;
-	}
-	errno = res;
-	return cast(error)res;
 }
 // - (0e) sys_getpid() -> pid
 // - (0f) sys_getuid() -> uid

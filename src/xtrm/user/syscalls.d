@@ -39,7 +39,9 @@ enum error : long {
 }
 
 struct FixedQueue {
+	bool polling = false;
 	ubyte[4096]* _data;
+	ulong rc = 2;
 	ulong read = 0, write = 0, unread = 0, barrier = 0;
 	ubyte[] data() {
 		return (*_data);
@@ -60,8 +62,10 @@ struct FixedQueue {
 	ubyte do_read() {
 		while (!unread) {
 			current.sleepgen += 1;
+			polling = true;
 			asm { int 0xfe; }
 		}
+		polling = false;
 		ubyte data = data[read];
 		read = (read + 1) & 0x0fff;
 		if (unread == 4096) {
@@ -80,8 +84,10 @@ struct FixedQueue {
 	void do_write(ubyte b) {
 		while (unread == 4096) {
 			current.sleepgen += 1;
+			polling = true;
 			asm { int 0xfe; }
 		}
+		polling = false;
 		if (unread == 0) system_sleep_gen += 1; // wake the read side from sleep
 		data[write] = b;
 		write = (write + 1) & 0x0fff;
@@ -109,8 +115,8 @@ __gshared immutable(string)[] syscall_names = [
 	"sys_recv_data",
 	"sys_inb",
 	"sys_outb",
-	"sys_send_barrier",
-	"sys_recv_barrier",
+	"sys_silent_exit",
+	"???",
 	"sys_getpid",
 	"sys_getuid",
 	"sys_fork",
@@ -208,8 +214,27 @@ void syscall_handler(ulong sys, Regs* r) {
 			}
 			break;
 		}
+		case 0x04: {
+			ulong xid = r.rdi;
+			xid |= (1UL << 63);
+			foreach (i; 0 .. 256) {
+				if ((xid | i) in xidmsg) {
+					FixedQueue* fq = xidmsg[xid | i];
+					if (--fq.rc <= 0) {
+						if (fq.polling) {
+							printk("warning: close hanging on poll, this should not happen!");
+						} else {
+							free(fq);
+							xidmsg.del(xid | i);
+						}
+					}
+				}
+			}
+			break;
+		}
 		case 0x07: {
 			ulong xid = r.rdi, dataptr = r.rsi, len = r.rdx;
+			if (!(xid & (1UL << 63))) { r.rax = error.EINVAL; break; }
 			FixedQueue* queue;
 			if (xid in xidmsg) {
 				queue = xidmsg[xid];
@@ -226,6 +251,7 @@ void syscall_handler(ulong sys, Regs* r) {
 		}
 		case 0x08: {
 			ulong xid = r.rdi, dataptrptr = r.rsi, lenptr = r.rdx, rc = r.rcx;
+			if (!(xid & (1UL << 63))) { r.rax = error.EINVAL; break; }
 			FixedQueue* queue;
 			if (xid in xidmsg) {
 				queue = xidmsg[xid];
@@ -247,6 +273,7 @@ void syscall_handler(ulong sys, Regs* r) {
 		}
 		case 0x09: {
 			ulong xid = r.rdi, dataptr = r.rsi, len = r.rdx;
+			if (!(xid & (1UL << 63))) { r.rax = error.EINVAL; break; }
 			FixedQueue* queue;
 			if (xid in xidmsg) {
 				queue = xidmsg[xid];
@@ -260,38 +287,14 @@ void syscall_handler(ulong sys, Regs* r) {
 			r.rax = 0;
 			break;
 		}
-		case 0xc: {
-			ulong xid = r.rdi;
-			FixedQueue* queue;
-			if (xid in xidmsg) {
-				queue = xidmsg[xid];
-			} else {
-				queue = xidmsg[xid] = FixedQueue.allocate();
-			}
-			queue.barrier++;
-			system_sleep_gen += 1;
-			while (queue.barrier) {
-				current.sleepgen = system_sleep_gen + 1;
-				asm { int 0xfe; }
-			}
-			r.rax = 0;
-			break;
-		}
-		case 0xd: {
-			ulong xid = r.rdi;
-			FixedQueue* queue;
-			if (xid in xidmsg) {
-				queue = xidmsg[xid];
-			} else {
-				queue = xidmsg[xid] = FixedQueue.allocate();
-			}
-			while (!queue.barrier) {
-				current.sleepgen = system_sleep_gen + 1;
-				asm { int 0xfe; }
-			}
-			queue.barrier--;
-			system_sleep_gen += 1;
-			r.rax = 0;
+		case 0x0c: {
+			if (current.pid == 1) assert(false, "attempting to kill init!");
+			printk("silent exit of pid {}", current.pid);
+			current.vm.die();
+			free(current.vm);
+			current.suicide = true;
+			asm { int 0xfe; }
+			assert(false, "cannot reschedule");
 			break;
 		}
 		case 0x10: {

@@ -54,14 +54,20 @@ actions:
     ld:
       _: build/init.elf
       noop: $libxtrix
-      noop: $libxk
       noop: $libsrpc
+      noop: $libxk
       u-ldc: src/progs/init/*.d
     ld:
       _: build/hello.elf
       noop: $libxtrix
       noop: $libxk
       u-ldc: src/progs/hello/*.d
+    ld:
+      _: build/discoveryd.elf
+      noop: $libxtrix
+      noop: $libsrpc
+      noop: $libxk
+      u-ldc: src/progs/discoveryd/*.d
     k-ld:
       _: build/kernel.elf
       k-ldc: src/libxk/*.d
