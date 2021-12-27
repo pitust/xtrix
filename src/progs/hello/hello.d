@@ -18,9 +18,9 @@ module progs.hello.hello;
 
 import libxtrix.io;
 import libxtrix.syscall;
-import libsrpc.rpc_server;
+// import libsrpc.rpc_server;
 import libxtrix.libc.malloc;
-import progs.init.init_srpc;
+// import progs.init.init_srpc;
 
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
@@ -28,9 +28,9 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
-	InitServerConn* conn = connect!(InitServerConn)(SRPC_FIND);
-	conn.declare("sexd", 69);
-	printf("sexd is available at {}", conn.lookup("sexd"));
-	conn.close();
+	// InitServerConn* conn = connect!(InitServerConn)(SRPC_FIND);
+	// conn.declare("sexd", 69);
+	// printf("sexd is available at {}", conn.lookup("sexd"));
+	// conn.close();
 	return 0;
 }

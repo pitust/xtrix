@@ -33,6 +33,8 @@ private ulong mmhash_mix(ulong value) {
 struct HashMap(K, V) {
 	Item root;
 
+	this(ref HashMap!(K,V) r) { assert(false, "hashmaps are not copyable (yet)!"); }
+
 	struct ChainItem {
 		K key;
 		V value;

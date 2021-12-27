@@ -87,6 +87,22 @@ extern(C) void interrupt_handler(Regs* r) {
 	
 	printk("Encontered unknown interrupt from ring{}! rip={*}", r.cs&3, r.rip);
 	printk("Error information: {} | {x}", r.error, r.error);
+	if ((r.cs&3) == 3) {
+		printk("guesstrace breadcrumbs:");
+		// 0xfffffffffff00000 & p == 0x0000000000200000
+		ulong nvp = 0;
+		while (r.rsp & 0x0f) r.rsp++; // align the stack
+		printk("return pointer:    0      {*}", r.rip);
+		while (r.rsp < 0xfe0004000) {
+			// 0xfffffffffff00000 & p == 0x0000000000200000
+			ulong* e = cast(ulong*)r.rsp;
+			ulong a = e[0], b = e[1];
+			printk("{x}:    {*}      {*}", r.rsp, a, b);
+			if ((0xfffffffffff00000 & a) == 0x200000) nvp++;
+			if ((0xfffffffffff00000 & b) == 0x200000) nvp++;
+			r.rsp += 0x10;
+		}
+	}
 
 	while (1) {
 		asm {

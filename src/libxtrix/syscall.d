@@ -216,8 +216,15 @@ long sys_wait(out ulong code) {
 pragma(mangle, "main")
 private extern(C) int target_main(ulong argc, char** argv);
 
+pragma(mangle, "elfbase") extern __gshared void* theelfbase;
+pragma(mangle, "elftop") extern __gshared void* theelftop;
+
 extern(C) void _start(ulong argc, char** argv) {
-	sys_dbglog("_start!");
+	import libxtrix.gc : elfbase, elftop;
+
+	elfbase = &theelfbase; elftop = &theelftop;
+	assert(elfbase && elftop);
+
 	asm { xor RAX, RAX; } // a pathetic attempt at setting the result value to zero
 	int code = target_main(argc, argv);
 	sys_exit(code);

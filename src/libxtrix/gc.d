@@ -19,6 +19,7 @@
 module libxtrix.gc;
 
 import libxtrix.io;
+import core.lifetime;
 import libxtrix.libc.malloc;
 
 private enum SweepColor {
@@ -134,7 +135,6 @@ private void do_dealloc(BlockHeader* v) {
 		v.prev.next = v.next;
 	if (first == v)
 		first = v.next;
-	printf("Freeing {}", (cast(void*) v) - 8);
 	free((cast(void*) v) - 8);
 }
 

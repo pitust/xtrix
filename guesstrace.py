@@ -3,15 +3,13 @@ import sys, os, subprocess
 # guesstrace - guess stack traces (macOS only, really damn cool)
 
 
-# proc = subprocess.Popen('pbpaste',
-#                                 shell=True,
-#                                 stdout=subprocess.PIPE,
-#                                 bufsize=-1)
+proc = subprocess.Popen('pbpaste',
+                                shell=True,
+                                stdout=subprocess.PIPE,
+                                bufsize=-1)
 
-# clip = proc.stdout.read().decode().strip().splitlines()
-# proc.kill()
-clip = ['0xfe0003b98:    0x000000000000001f      0x00000000000000ff', '0xfe0003ba8:    0x0000000fe0003bd8      0x00000000002034b8', '0xfe0003bb8:    0x000009d000006780      0x0000005300000040', '0xfe0003bc8:    0x0000000000211650      0x00000000002111b0', '0xfe0003bd8:    0x0000000fe0003c08      0x00000000002078b2', '0xfe0003be8:    0x0000000fe0003c08      0x0000000000000000', '0xfe0003bf8:    0x0000000000000005      0x000009d000000da0', '0xfe0003c08:    0x0000000fe0003c78      0x0000000000207789', '0xfe0003c18:    0x0000000000000020      0x0000000fe0003ca8', '0xfe0003c28:    0x0000000fe0003d38      0x0000000fe0003c48', '0xfe0003c38:    0x0000000fe0003d38      0x0000000fe0003ca8', '0xfe0003c48:    0x0000000000000005      0x0000000000000000', '0xfe0003c58:    0x000009d000000ee0      0x0000454f7513e40c', '0xfe0003c68:    0x0000000000000009      0x000009d000000f00', '0xfe0003c78:    0x0000000fe0003d28      0x0000000000207474', '0xfe0003c88:    0x0000000000002000      0x000009d000005fc0', '0xfe0003c98:    0x0000000000000006      0x0000000fe0003d38', '0xfe0003ca8:    0x0000000000000009      0x000009d000000f00', '0xfe0003cb8:    0x0000000000000009      0x0000454f7513e40c', '0xfe0003cc8:    0x0000000000000003      0x0000000fe0003d38', '0xfe0003cd8:    0x0000000fe0003d38      0x000009d000000f20', '0xfe0003ce8:    0x000000000020eea0      0x000009d000000f40', '0xfe0003cf8:    0x000000000020ed60      0x000009d000000f60', '0xfe0003d08:    0x000000000020eb60      0x000009d000000f80', '0xfe0003d18:    0x0000000000000003      0x80720dbf58dc6c03', '0xfe0003d28:    0x0000000fe0003dc8      0x000000000020e7f6', '0xfe0003d38:    0x0000000000000000      0x0000000000000000', '0xfe0003d48:    0x000009d0000026c0      0x0000000000000000', '0xfe0003d58:    0x0000000000000000      0x0000000000000000', '0xfe0003d68:    0x000009d000004300      0x000009d000001300', '0xfe0003d78:    0x000009d000003a80      0x0000000000000000', '0xfe0003d88:    0x0000000000000000      0x0000000000000000']
-
+clip = proc.stdout.read().decode().strip().splitlines()
+proc.kill()
 clist = []
 
 def try_bt(p):
@@ -27,4 +25,4 @@ for line in clip:
     try_bt(g1p)
     try_bt(g2p)
 
-os.system('addr2line -e ' + sys.argv[1] + ' ' + ' '.join(clist))
+os.system('x86_64-elf-addr2line -p -e ' + sys.argv[1] + ' ' + ' '.join(clist) + ' | ddemangle')

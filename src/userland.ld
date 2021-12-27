@@ -13,6 +13,7 @@ PHDRS
 SECTIONS
 {
 	. = 0x0000000000200000;
+	elfbase = .;
 
 	.text : ALIGN(4096) {
 		*(.text*)
@@ -30,4 +31,6 @@ SECTIONS
 		*(COMMON)
 		*(.bss*)
 	} :data
+
+	elftop = .;
 }

@@ -35,6 +35,8 @@ private ulong strhash(string s) {
 struct StringMap(V) {
 	Item root;
 
+	this(ref StringMap!V r) { assert(false, "stringmaps are not copyable yet!"); }
+
 	struct ChainItem {
 		List!char key;
 		V value;
