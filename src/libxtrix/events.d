@@ -130,12 +130,12 @@ struct future(T) {
                         fut.resolve(rval);
                     });
                 } else {
-                    fut.resolve(cb());
+                    fut.resolve(cb(*value));
                 }
             };
             return fut;
         }
-        return _do_flatten_future(cb());
+        return _do_flatten_future(cb(*value));
     }
 }
 

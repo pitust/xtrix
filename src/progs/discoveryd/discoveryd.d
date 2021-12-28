@@ -35,6 +35,12 @@ int _main(ulong argc, char** argv) {
         return 3;
     }).then((ref int i) {
         printf("value: {}", i);
+        return i;
+    }).then(delegate int(ref int i) {
+        return i * 2;
+    }).then((ref int i) {
+        printf("value: {}", i);
+        return i;
     });
     sig.resolve();
     
