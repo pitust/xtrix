@@ -70,7 +70,7 @@ private T[] array(T)(T* ptr, ulong len) {
 
 T[] alloc_array(T)(ulong n) {
 	maysweep += 1;
-	if (maysweep == 5) {
+	if (maysweep) {
 		sweep();
 		maysweep = 0;
 	}
@@ -157,9 +157,11 @@ private void do_dealloc(BlockHeader* v) {
 	if (first == v)
 		first = v.next;
 	free((cast(void*) v) - 8);
+	printf("frii: {*}", (cast(void*)v) - 8);
 }
 
 private void do_sweep_of(void* d) {
+	if (d == cast(void*)0x000009d000000e68) printf("hmm");
 	void* ogptr = d;
 
 	if (!malloc_size(d)) /* not on the heap */ return;
@@ -192,6 +194,7 @@ move_back_further:
 }
 
 void sweep() {
+	printf("!!! gee cee");
 	ulong[15] regs;
 	ulong* rp = regs.ptr;
 	asm {
@@ -217,14 +220,18 @@ void sweep() {
 	ulong stack_top = 0xfe0004000;
 	ulong stack_bottom = regs[14];
 	is_flipped = !is_flipped;
-	foreach (i; stack_bottom .. stack_top) {
-		if (i & 7) continue;
+	foreach (i; stack_bottom .. (stack_top - 7)) {
+		// if (i & 7) continue;
 		do_sweep_of(*(cast(void**) i));
 	}
 	foreach (ulong reg; regs) {
 		do_sweep_of(cast(void*) reg);
 	}
+	printf("elfbase={} elftop={}", cast(void*)elfbase, cast(void*)elftop);
 	foreach (void** ee; elfbase .. elftop) {
+		if (ee == cast(void**)0x0000000000212008) {
+			printf("SWEEP: {*}", *ee);
+		}
 		do_sweep_of(*ee);
 	}
 	BlockHeader* h = first;

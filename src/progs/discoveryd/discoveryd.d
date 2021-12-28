@@ -31,10 +31,11 @@ int _main(ulong argc, char** argv) {
     // ev_loop();
 
     Signal sig = newSignal();
+    Future!int fut = newFuture!(int)();
     sig.then(delegate int() {
         return 3;
     }).then((ref int i) {
-        printf("value: {}", i);
+        fut.resolve(i);
         return i;
     }).then(delegate int(ref int i) {
         return i * 2;
@@ -43,6 +44,11 @@ int _main(ulong argc, char** argv) {
         return i;
     });
     sig.resolve();
+    fut.then((ref int i) {
+        printf("value: {}", i);
+    });
+
+    ev_loop();
     
     return 0;
 }

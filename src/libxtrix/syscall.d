@@ -189,7 +189,9 @@ long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
 }
 // - (12) sys_setuid(sub-uid)
 // - (14) sys_exit(code)
+private extern(C) void ev_atexit();
 void sys_exit(ulong code) {
+	ev_atexit();
 	asm {
 		mov RDI, code;
 		int 0x24;

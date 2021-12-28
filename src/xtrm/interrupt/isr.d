@@ -92,14 +92,15 @@ extern(C) void interrupt_handler(Regs* r) {
 		// 0xfffffffffff00000 & p == 0x0000000000200000
 		ulong nvp = 0;
 		while (r.rsp & 0x0f) r.rsp++; // align the stack
-		printk("return pointer:    0      {*}", r.rip);
+		printk("code pointer:    {*}      0", r.rip);
 		while (r.rsp < 0xfe0004000) {
 			// 0xfffffffffff00000 & p == 0x0000000000200000
 			ulong* e = cast(ulong*)r.rsp;
 			ulong a = e[0], b = e[1];
-			printk("{x}:    {*}      {*}", r.rsp, a, b);
+			ulong onvp = nvp;
 			if ((0xfffffffffff00000 & a) == 0x200000) nvp++;
 			if ((0xfffffffffff00000 & b) == 0x200000) nvp++;
+			if (nvp != onvp) printk("{x}:    {*}      {*}", r.rsp, a, b);
 			r.rsp += 0x10;
 		}
 	}
