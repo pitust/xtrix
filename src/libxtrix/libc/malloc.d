@@ -119,7 +119,7 @@ extern(C) void free(void* pointer) {
 	ubyte mode = (cast(ubyte*)maskPointer)[1];
 	ulong size = bucketSizes[bucket];
 	memset(cast(byte*)ptr, 0xe1, size);
-	addTargetSliceToBucket(ptr, bucket);
+	// addTargetSliceToBucket(ptr, bucket);
 }
 extern(C) ulong malloc_size(void* pointer) {
 	// some c programs rely on free(null) being fine

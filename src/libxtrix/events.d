@@ -35,8 +35,6 @@ void ev_on(RPCPredicate rp) {
 }
 
 void ev_next_tick(void delegate() @system action) {
-    printf("a: {p}", cast(ulong)action.funcptr);
-    if (evl_actions.length) printf("R: {}", cast(void*)&evl_actions[0]);
     evl_actions = concat(evl_actions, action);
 }
 
@@ -129,7 +127,10 @@ struct future(T) {
         assert(!value);
         state = FutureState.resolved;
         value = alloc!(T)(val);
-        ev_next_tick(() { if (dlgt) dlgt(); });
+        ev_next_tick(() {
+            if (dlgt)
+                dlgt();
+        });
     }
 
     Signal then(void delegate(ref T val) @system cb) {

@@ -83,7 +83,6 @@ T[] alloc_array(T)(ulong n) {
 	b.header.size = n * T.sizeof;
 	b.header.prev = cast(BlockHeader*) 0;
 	if (first) first.prev = &b.header;
-	b.header.size = T.sizeof;
 	first = &b.header;
 	return array(&b.data, n);
 }
@@ -124,7 +123,6 @@ T* alloc(T, Args...)(Args args) {
 	b.header.size = T.sizeof;
 	b.header.prev = cast(BlockHeader*) 0;
 	if (first) first.prev = &b.header;
-	b.header.size = T.sizeof;
 	first = &b.header;
 	emplace(&b.data, args);
 	return &b.data;
@@ -155,7 +153,6 @@ private void do_dealloc(BlockHeader* v) {
 		v.prev.next = v.next;
 	if (first == v)
 		first = v.next;
-	printf("frii: {*} color={} | {}", (cast(void*)v) + BlockHeader.sizeof, cast(int)v.color, cast(int)_not_swept());
 	free((cast(void*) v) - 8);
 }
 
@@ -177,12 +174,9 @@ private void do_sweep_of(void* d) {
 	}
 
 	ulong magic = *cast(ulong*)(d);
-	if (ogptr == cast(void*)0x000009d000000da8) {
-		printf("da8 starts at {p}, with m={x}", d, magic);
-	}
 	if (magic != *cast(ulong*) "TRICOLOR".ptr) {
 		/* wrong magic */
-		printf("m: {p} vs {p}", magic, *cast(ulong*) "TRICOLOR".ptr);
+		printf("magic mismatch: {p} vs {p}", magic, *cast(ulong*) "TRICOLOR".ptr);
 		assert(false, "wrong magic but it's in the list");
 		return;
 	}
@@ -203,7 +197,6 @@ private void do_sweep_of(void* d) {
 }
 
 void sweep() {
-	printf("!!! gee cee");
 	ulong[15] regs;
 	ulong* rp = regs.ptr;
 	asm {
@@ -230,18 +223,14 @@ void sweep() {
 	ulong stack_bottom = regs[14];
 	is_flipped = !is_flipped;
 	foreach (i; stack_bottom .. (stack_top - 7)) {
-		// if (i & 7) continue;
-		if (i == 0x0000000fe0003f48) { printf("sus: {}", *cast(void**)i); }
-		if (i == 0x0000000fe0003f50) { printf("amogus: {}", *cast(void**)i); }
+		if (i & 7) continue;
 		do_sweep_of(*(cast(void**) i));
 	}
 	foreach (ulong reg; regs) {
 		do_sweep_of(cast(void*) reg);
 	}
-	printf("elfbase={} elftop={}", cast(void*)elfbase, cast(void*)elftop);
 	foreach (void** ee; elfbase .. elftop) {
 		if (ee == cast(void**)0x0000000000212008) {
-			printf("SWEEP: {*}", *ee);
 		}
 		do_sweep_of(*ee);
 	}
