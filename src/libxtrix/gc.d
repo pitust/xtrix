@@ -108,12 +108,13 @@ T[] concat(T)(T[] arra, T[] args) {
 	return arr;
 }
 
-T* alloc(T)() {
+T* alloc(T, Args...)(Args args) {
 	maysweep += 1;
 	if (maysweep == 5) {
 		sweep();
 		maysweep = 0;
 	}
+
 
 	alias Blk = Block!(T);
 	Blk* b = cast(Blk*) malloc(Blk.sizeof);
@@ -124,6 +125,26 @@ T* alloc(T)() {
 	b.header.prev = cast(BlockHeader*) 0;
 	if (first) first.prev = &b.header;
 	b.header.size = T.sizeof;
+	first = &b.header;
+	emplace(&b.data, args);
+	return &b.data;
+}
+extern(C) void* _d_allocmemory(ulong size) {
+	maysweep += 1;
+	if (maysweep == 5) {
+		sweep();
+		maysweep = 0;
+	}
+
+	alias Blk = Block!(ubyte[0]);
+	Blk* b = cast(Blk*) malloc(Blk.sizeof + size);
+	b.magic = *cast(ulong*) "TRICOLOR".ptr;
+	b.header.color = _swept;
+	b.header.next = first;
+	b.header.size = size;
+	b.header.prev = cast(BlockHeader*) 0;
+	if (first) first.prev = &b.header;
+	b.header.size = size;
 	first = &b.header;
 	return &b.data;
 }
@@ -143,10 +164,16 @@ private void do_sweep_of(void* d) {
 
 	if (!malloc_size(d)) /* not on the heap */ return;
 	d = d - BlockHeader.sizeof - ulong.sizeof;
+move_back_further:
 	if (!malloc_size(d)) /* the header is not on the heap */ return;
 
+
 	ulong magic = *cast(ulong*)(d);
-	if (magic != *cast(ulong*) "TRICOLOR".ptr) /* wrong magic */ return; 
+	if (magic != *cast(ulong*) "TRICOLOR".ptr) {
+		/* wrong magic */
+		d = d -= 8;
+		goto move_back_further;
+	}
 
 	// we are pretty sure this is a valid object. sweep it.
 	BlockHeader* hdr = cast(BlockHeader*)(d + ulong.sizeof);

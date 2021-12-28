@@ -2,7 +2,6 @@ import sys, os, subprocess
 
 # guesstrace - guess stack traces (macOS only, really damn cool)
 
-
 proc = subprocess.Popen('pbpaste',
                                 shell=True,
                                 stdout=subprocess.PIPE,
@@ -25,4 +24,4 @@ for line in clip:
     try_bt(g1p)
     try_bt(g2p)
 
-os.system('x86_64-elf-addr2line -p -e ' + sys.argv[1] + ' ' + ' '.join(clist) + ' | ddemangle')
+os.system('x86_64-elf-addr2line -p -e ' + sys.argv[1] + ' ' + ' '.join(clist) + ' | grep -v \'??:0\'')

@@ -28,13 +28,16 @@ private const __gshared ulong[14] bucketSizes = [
 private __gshared ulong[14] bucketPointers;
 private __gshared ulong bucketbase = 0x9d000000000UL;
 private __gshared ulong top_sizemap_paged_address = 0x7f0000UL;
+private __gshared ulong top_heap_address = 0;
 private const __gshared sizemap_address = 0x7f0000UL;
 
 pragma(inline) private ulong getSizemapAddress(ulong bucketAdress) {
 	return ((bucketAdress - 0x9d000000000) >> 4) + 0x7f0000UL;
 }
 pragma(inline) private ulong getTopHeapAddr() {
-	return (top_sizemap_paged_address - 0x7f0000UL) << 4 + 0x9d000000000;
+	ulong a = ((top_sizemap_paged_address - 0x7f0000UL) << 4) + 0x9d000000000UL;
+	assert(top_heap_address > a - 0x10000);
+	return top_heap_address;
 }
 
 private void addTargetSliceToBucket(ulong base, ulong ti) {
@@ -91,6 +94,7 @@ extern(C) void* malloc(ulong size) {
 			(cast(ubyte*)maskPointer)[1] = 1;
 			memset(cast(byte*)ptr, 0xe3, ssize);
 			memset(cast(byte*)ptr, 0x00, size);
+			if (cast(ulong)(ptr) + size > top_heap_address) top_heap_address = cast(ulong)ptr + size;
 			return cast(void*)ptr;
 		}
 	}
@@ -120,12 +124,13 @@ extern(C) void free(void* pointer) {
 extern(C) ulong malloc_size(void* pointer) {
 	// some c programs rely on free(null) being fine
 	ulong ptr = cast(ulong)pointer;
-	if (ptr < 0x9d000000000) return 0;
+	if (ptr < 0x9d000000000) {
+		return 0;
+	}
 	ulong maskPointer = getSizemapAddress(ptr);
 	if (cast(ulong)ptr > getTopHeapAddr()) {
 		return 0;
 	}
-	printf("mp: {x}", ptr);
 	ubyte bucket = (cast(ubyte*)maskPointer)[0];
 	ubyte mode = (cast(ubyte*)maskPointer)[1];
 	ulong size = bucketSizes[bucket];

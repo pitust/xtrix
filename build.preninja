@@ -24,7 +24,7 @@ rules:
 
 env:
   k-dflags: -code-model=kernel --cache=build/kcache
-  dflags: -I src --relocation-model=static --gdwarf --betterC -mtriple=x86_64-elf
+  dflags: -I src --relocation-model=static --gdwarf --betterC -mtriple=x86_64-elf -I build/rsc
   dnosse: -mattr=-sse,-sse2,-sse3,-ssse3 --enable-color=true
   k-cflags: -mcmodel=kernel -Iscalable-font2
   cflags: -ggdb -target x86_64

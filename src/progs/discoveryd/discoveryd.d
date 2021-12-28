@@ -3,7 +3,8 @@ module progs.discoveryd.discoveryd;
 import libxtrix.gc;
 import libxtrix.io;
 import libxk.stringmap;
-// import libsrpc.rpc_server;
+import libxtrix.events;
+import xtrix_rpc.logger_rpc;
 
 // struct discoveryimpl {
 // 	ulong lookup(string name) {
@@ -23,13 +24,19 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: starting discovery server...", argv[0]);
 
-    
-    // idm["discoveryd"] = SRPC_FIND;
-    
-    // discoveryimpl* impl = alloc!(discoveryimpl)();
-	// RPCListener l = publish_srpc!(InitServerConn)(impl);
-	// l.attach(SRPC_FIND);
-	// l.loop();
+    // logger_rpc_server.onLogLine((line) {
+    //     printf("log: {}", line);
+    // });
 
+    // ev_loop();
+
+    Signal sig = newSignal();
+    sig.then(delegate int() {
+        return 3;
+    }).then((ref int i) {
+        printf("value: {}", i);
+    });
+    sig.resolve();
+    
     return 0;
 }
