@@ -65,7 +65,7 @@ struct VM {
 				(*owned_pages)[owned_count++] = phys(new_page_table);
 			}
 			
-			pte = *cast(ulong[512]*)(0xffff800000000000 + ptk & ~0xfff);
+			pte = *cast(ulong[512]*)virt(ptk & ~0xfff);
 		}
 		
 		ulong* ptr = &pte[(va_val >> 12) & 0x1ff];

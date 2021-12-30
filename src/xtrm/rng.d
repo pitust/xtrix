@@ -1,20 +1,20 @@
 module xtrm.rng;
 
-__gshared ulong value = 0x9e3779b97f4a7c15;
+__gshared ulong value = 0x9e37_79b9_7f4a_7c15;
 
 private ulong mmhash_mix(ulong value) {
 	value ^= value >> 33;
-	value *= 0xFF51AFD7ED558CCD;
+	value *= 0xff51_afd7_ed55_8ccd;
 	value ^= value >> 33;
-	value *= 0xC4CEB9FE1A85EC53;
+	value *= 0xc4ce_b9fe_1a85_ec53;
 	value ^= value >> 33;
 	return value;
 }
 private ulong mmhash_mix2(ulong value) {
 	value ^= value >> 33;
-	value *= 0xC4CEB9FE1A85EC53;
+	value *= 0xc4ce_b9fe_1a85_ec53;
 	value ^= value >> 33;
-	value *= 0xFF51AFD7ED558CCD;
+	value *= 0xff51_afd7_ed55_8ccd;
 	value ^= value >> 33;
 	return value;
 }
