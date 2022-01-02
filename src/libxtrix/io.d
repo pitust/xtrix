@@ -100,6 +100,7 @@ void printf(Args...)(string fmt, Args argz) {
 	while (off < fmt.length) putch(fmt[off++]);
 	putch('\n');
 }
+private extern(C) void do_exit(ulong code);
 void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(AssertT at, string fmt, Args argz) {
 	if (at) return;
 	ulong off = 0;
@@ -115,7 +116,7 @@ void assertf(string file = __FILE__, int line = __LINE__, AssertT, Args...)(Asse
 
 	while (off < fmt.length) putch(fmt[off++]);
 	printf("' at {}:{}", file, line);
-	sys_exit(255);
+	do_exit(255);
 }
 
 string tr_err(long er) {

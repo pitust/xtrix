@@ -25,6 +25,10 @@ struct ChildRecord {
 	ChildRecord* next;
 }
 
+struct KMessage {
+	ulong srcpid, rid, len;
+}
+
 struct Thread {
 	Obj obj = Obj(ObjType.thr); alias obj this;
 	Regs regs;
@@ -32,5 +36,9 @@ struct Thread {
 	ulong[4] rsp0_phy;
 	ulong rsp0_virt, sleepgen, pid, uid, ppid;
 	ulong is_wfor, waitpid, waitcode, suicide;
-	char[3790] tag;
+	bool can_rx;
+	uint clients;
+	KMessage* rxmsg;
+	void*[4] rx_arena;
+	char[3742] tag;
 }

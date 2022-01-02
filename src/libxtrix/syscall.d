@@ -159,6 +159,36 @@ void sys_silent_exit() {
 		int 0x1c;
 	}
 }
+// - (0d) sys_sendmsg(pid, rid, len, data)
+void sys_sendmsg(ulong pid, ulong rid, ulong len, void* data) { 
+	long res;
+	asm {
+		mov RDI, pid;
+		mov RSI, rid;
+		mov RDX, len;
+		mov RCX, data;
+		int 0x1d;
+		mov res, RAX;
+	}
+	errno = res;
+}
+// - (0e) sys_recvmsg(*msg, *arena, maxlen)
+struct Message {
+	ulong srcpid;
+	ulong rid;
+	ulong len;
+}
+void sys_recvmsg(Message* msg, void* arena, ulong maxlen) { 
+	long res;
+	asm {
+		mov RDI, msg;
+		mov RSI, arena;
+		mov RDX, maxlen;
+		int 0x1e;
+		mov res, RAX;
+	}
+	errno = res;
+}
 // - (0e) sys_getpid() -> pid
 // - (0f) sys_getuid() -> uid
 
@@ -190,12 +220,15 @@ long sys_rawexec(void* elfptr, ulong elfsz, ulong argc, char** argv) {
 // - (12) sys_setuid(sub-uid)
 // - (14) sys_exit(code)
 private extern(C) void ev_atexit();
-void sys_exit(ulong code) {
-	ev_atexit();
+private extern(C) void do_exit(ulong code) {
 	asm {
 		mov RDI, code;
 		int 0x24;
 	}
+}
+void sys_exit(ulong code) {
+	ev_atexit();
+	do_exit(code);
 	assert(false, "cannot continue after exit!");
 }
 

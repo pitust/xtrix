@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 module libxtrix.libc.asserts;
 
-
+private extern(C) void do_exit(ulong code);
 extern (C) void __assert(char* assertion, char* file, int line) {
 
 	import libxtrix.io : printf;
@@ -23,5 +23,5 @@ extern (C) void __assert(char* assertion, char* file, int line) {
 
 	printf("Assertion failed: '{}' at {}:{}", assertion, file, line);
 
-	sys_exit(255);
+	do_exit(255);
 }

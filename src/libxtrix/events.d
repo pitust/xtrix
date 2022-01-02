@@ -2,13 +2,18 @@ module libxtrix.events;
 
 import libxtrix.io;
 import libxtrix.gc;
+import libxtrix.syscall;
 
 alias RPCPredicate = bool delegate(ulong pid, ulong rid, ubyte[] buf) @system;
 alias HandlerType = void delegate(ulong pid, ulong rid, ubyte[] buf) @system;
 
 private __gshared void delegate() @system[] evl_actions = [];
+private __gshared RPCPredicate[] predicates = [];
 private __gshared bool in_ev_tick = false;
 
+void ev_pump() {
+    
+}
 void ev_tick() {
     assert(!in_ev_tick, "ev_tick cannot be called in an event context!");
     in_ev_tick = true;
@@ -22,6 +27,12 @@ void ev_tick() {
 void ev_loop() {
     while (true) {
         ev_tick();
+        ev_pump();
+    }
+}
+void ev_settle() {
+    while (evl_actions.length) {
+        ev_tick();
     }
 }
 extern(C) void ev_atexit() {
@@ -31,7 +42,7 @@ extern(C) void ev_atexit() {
 }
 
 void ev_on(RPCPredicate rp) {
-
+    predicates = concat(predicates, rp);
 }
 
 void ev_next_tick(void delegate() @system action) {

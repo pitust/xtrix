@@ -3,6 +3,7 @@ module progs.discoveryd.discoveryd;
 import libxtrix.gc;
 import libxtrix.io;
 import libxk.stringmap;
+import libxtrix.syscall;
 import libxtrix.events;
 import xtrix_rpc.logger_rpc;
 
@@ -48,6 +49,9 @@ int _main(ulong argc, char** argv) {
         printf("value: {}", i);
     });
 
+    // pid, rid, len, data
+    ubyte[2] data = [69, 69];
+    sys_sendmsg(2, 0, 2, data.ptr); anoerr("sys_sendmsg");
     ev_loop();
     
     return 0;

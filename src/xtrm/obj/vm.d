@@ -72,6 +72,9 @@ struct VM {
 		return ptr;
 	}
 
+	ulong addrof(ulong virt) {
+		return (*get_ptr_ptr(virt & ~0xfff) & ~0xfff) | (virt & 0xfff);
+	}
 	void cloneto(VM* other) {
 		assert(did_init_correctly, "Uninitialized thread!");
 		foreach (i; 0 .. vme_count) {

@@ -67,6 +67,7 @@ extern(C) void interrupt_handler(Regs* r) {
 			mov cr2, RAX;
 		}
 		printk("cr2: {*}", cr2);
+		printk("rip: {*}", r.rip);
 		printk("flags: {x}", r.flags);
 		printk("rsp: {x}", r.rsp);
 		static foreach (field; __traits(allMembers, Regs)) {{

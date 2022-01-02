@@ -297,6 +297,72 @@ void syscall_handler(ulong sys, Regs* r) {
 			assert(false, "cannot reschedule");
 			break;
 		}
+		case 0x0d: {
+			ulong pid = r.rdi, rid = r.rsi, len = r.rdx, data = r.rcx;
+		wait:
+			if (pid !in procs) {
+				r.rax = error.EINVAL;
+				return;
+			}
+			Thread* th = procs[pid];
+			th.clients++;
+			if (!th.can_rx) {
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+				goto wait;
+			}
+			th.clients--;
+			KMessage* km = th.rxmsg;
+			if (km.len < len) { r.rax = error.EINVAL; return; }
+			km.rid = rid;
+			km.srcpid = current.pid;
+			km.len = len;
+			foreach (pg; 0 .. 4) {
+				if ((pg << 10) >= len) break;
+				long size = len - (pg << 10);
+				if (size < 0) break;
+				if (size > 0x1000) size = 0x1000;
+				void* outp = th.rx_arena[pg];
+				current.vm.copy_out_of(data + (pg << 10), outp, size);
+			}
+			th.can_rx = false;
+			r.rax = 0;
+			break;
+		}
+		case 0x0e: {
+			ulong msgptr = r.rdi, arena = r.rsi, maxlen = r.rdx;
+			KMessage msg;
+			current.can_rx = true;
+			current.rxmsg = &msg;
+			
+			// create arena refs to current.rx_arena
+			foreach (pg; 0 .. 4) {
+				void* arena_item = allocate_on_pool(*get_pool("pool/page"));
+				current.rx_arena[pg] = arena_item;
+			}
+
+			msg.len = maxlen;
+			while (current.can_rx) {
+				system_sleep_gen += 1;
+				current.sleepgen = system_sleep_gen + 1;
+				asm { int 0xfe; }
+			}
+			printk("TODO: transfer out header");
+			// release arena
+			foreach (pg; 0 .. 4) {
+				void* arena_item = current.rx_arena[pg];
+				long size = msg.len - (pg << 10);
+				if (size < 0) break;
+				if (size > 0x1000) size = 0x1000;
+				current.vm.copy_into(arena + (pg << 10), arena_item, size);
+				add_to_pool(*get_pool("pool/page"), arena_item);
+			}
+			current.rxmsg = null;
+			current.vm.copy_into(msgptr, &msg, KMessage.sizeof);
+
+			r.rax = 0;
+			break;
+		}
 		case 0x10: {
 			VM* newvm = alloc!VM;
 			newvm.do_init();
@@ -409,6 +475,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			parent.waitpid = current.pid;
 			parent.waitcode = exit_code;
 			current.suicide = true;
+			procs.del(current.pid);
 			asm { int 0xfe; }
 			assert(false, "cannot reschedule");
 			break;

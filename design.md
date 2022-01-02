@@ -18,6 +18,13 @@
         - (08) sys_send_vectored(xid, dataptr*, len*, rcount)
         - (09) sys_recv_data(xid, dataptr, len)
         - (0c) sys_clean_exit()
+     - FastIPC
+        - (0d) sys_sendmsg(pid, rid, len, data)
+        - (0e) sys_recvmsg(*msg, *arena, maxlen)
+             - struct message:
+                - ulong spid
+                - ulong rid
+                - ulong len
      - Process stuff
         - (0e) sys_getpid() -> pid
         - (0f) sys_getuid() -> uid
@@ -31,4 +38,4 @@
 	 	- (0a) sys_inb(port) -> byte
 		- (0b) sys_outb(port, byte)
 
-free syscall numbers: 08, 0d
+free syscall numbers: 0d

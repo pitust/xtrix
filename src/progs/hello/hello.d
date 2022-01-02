@@ -28,9 +28,9 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
-	// InitServerConn* conn = connect!(InitServerConn)(SRPC_FIND);
-	// conn.declare("sexd", 69);
-	// printf("sexd is available at {}", conn.lookup("sexd"));
-	// conn.close();
+	Message header;
+	ubyte[64] arena;
+	sys_recvmsg(&header, arena.ptr, arena.length); anoerr("sys_recieve");
+	printf("foo: {} {}", arena[0], arena[1]);
 	return 0;
 }
