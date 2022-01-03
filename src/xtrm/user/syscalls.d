@@ -306,13 +306,12 @@ void syscall_handler(ulong sys, Regs* r) {
 				return;
 			}
 			Thread* th = procs[pid];
-			th.clients++;
 			if (!th.can_rx) {
+				th.clients = 1;
 				current.sleepgen = system_sleep_gen + 1;
 				asm { int 0xfe; }
 				goto wait;
 			}
-			th.clients--;
 			KMessage* km = th.rxmsg;
 			if (km.len < len) { r.rax = error.EINVAL; return; }
 			km.rid = rid;
@@ -333,24 +332,25 @@ void syscall_handler(ulong sys, Regs* r) {
 		case 0x0e: {
 			ulong msgptr = r.rdi, arena = r.rsi, maxlen = r.rdx, block = r.rcx;
 			KMessage msg;
-			current.can_rx = true;
 			current.rxmsg = &msg;
 			
-			// create arena refs to current.rx_arena
-			foreach (pg; 0 .. 4) {
-				void* arena_item = allocate_on_pool(*get_pool("pool/page"));
-				current.rx_arena[pg] = arena_item;
-			}
 			msg.len = maxlen;
 			if (current.clients == 0 && !block) {
 				r.rax = error.EWOULDBLOCK;
 				break;
+			}
+			current.can_rx = true;
+			// create arena refs to current.rx_arena
+			foreach (pg; 0 .. 4) {
+				void* arena_item = allocate_on_pool(*get_pool("pool/page"));
+				current.rx_arena[pg] = arena_item;
 			}
 			while (current.can_rx) {
 				system_sleep_gen += 1;
 				current.sleepgen = system_sleep_gen + 1;
 				asm { int 0xfe; }
 			}
+			current.clients = 0;
 			// release arena
 			foreach (pg; 0 .. 4) {
 				void* arena_item = current.rx_arena[pg];

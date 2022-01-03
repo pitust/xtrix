@@ -162,7 +162,7 @@ private void do_sweep_of(void* d) {
 	{
 		BlockHeader* h = first;
 		while (h) {
-			if (h < d && h.size + cast(void*)&h[1] > d) {
+			if ((h+1) <= d && h.size + cast(void*)&h[1] > d) {
 				d = cast(void*)h;
 				d -= 8;
 				break;

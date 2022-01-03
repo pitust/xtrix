@@ -16,6 +16,7 @@ private __gshared bool in_ev_tick = false;
 private enum arenaptr = 0x8000_0000;
 private __gshared bool mapped_arena = false;
 private __gshared bool is_arena_in_use = false;
+private __gshared ulong callbacks_hot = 0;
 
 void ev_pump(bool blockx) {
     if (!mapped_arena) {
@@ -46,6 +47,7 @@ void ev_pump(bool blockx) {
         }
         RPCPredicate* cb = callbacks[subrid];
         callbacks[subrid] = null;
+        callbacks_hot--;
         (*cb)(msg.srcpid, msg.rid|1, xfer);
     } else {
         foreach (pred; predicates) {
@@ -55,6 +57,7 @@ void ev_pump(bool blockx) {
 }
 ulong ev_bind_callback(RPCPredicate cbfn) {
     RPCPredicate* pred = alloc!(RPCPredicate)(cbfn);
+    callbacks_hot++;
     foreach (i; 0 .. callbacks.length) {
         if (callbacks[i]) continue;
         callbacks[i] = pred;
@@ -74,9 +77,9 @@ void ev_tick() {
     in_ev_tick = false;
 }
 void ev_loop() {
-    while (true) {
+    while (callbacks_hot || predicates.length || evl_actions.length) {
         ev_tick();
-        ev_pump(evl_actions.length == 0 ? true : false);
+        ev_pump(false);
     }
 }
 void ev_settle() {
@@ -86,7 +89,7 @@ void ev_settle() {
 }
 extern(C) void ev_atexit() {
     if (evl_actions.length != 0 && !in_ev_tick) {
-        printf("warning: ev_atexit: evl still has actions! (did you forget to call ev_loop or ev_settle?)");
+        printf("warning: ev_atexit: unfinished jobs in the event queue! (did you forget to call ev_loop or ev_settle?)");
     }
 }
 
