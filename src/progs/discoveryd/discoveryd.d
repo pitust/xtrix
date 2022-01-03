@@ -51,7 +51,12 @@ int _main(ulong argc, char** argv) {
 
     // pid, rid, len, data
     ubyte[2] data = [69, 69];
-    sys_sendmsg(2, 0, 2, data.ptr); anoerr("sys_sendmsg");
+    ulong rid = ev_bind_callback(delegate bool(pid, rid, buf) {
+		assert(buf.length == 2);
+        printf("resonse: {} {}", buf[0], buf[1]);
+        return true;
+    });
+    sys_sendmsg(2, rid, 2, data.ptr); anoerr("sys_sendmsg");
     ev_loop();
     
     return 0;

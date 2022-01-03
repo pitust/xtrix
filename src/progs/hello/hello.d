@@ -17,8 +17,8 @@
 module progs.hello.hello;
 
 import libxtrix.io;
+import libxtrix.events;
 import libxtrix.syscall;
-// import libsrpc.rpc_server;
 import libxtrix.libc.malloc;
 // import progs.init.init_srpc;
 
@@ -29,8 +29,13 @@ int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
 	Message header;
-	ubyte[64] arena;
-	sys_recvmsg(&header, arena.ptr, arena.length); anoerr("sys_recieve");
-	printf("foo: {} {}", arena[0], arena[1]);
+	ev_on(delegate bool(pid, rid, buf) {
+		if (buf.length != 2) return false;
+        printf("2-byte request: {} {}", buf[0], buf[1]);
+		ubyte[2] data = [4, 20];
+    	sys_sendmsg(pid, rid, 2, data.ptr);
+        return true;
+    });
+	ev_loop();
 	return 0;
 }

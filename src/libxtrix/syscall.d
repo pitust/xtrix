@@ -24,6 +24,7 @@ enum error : long {
 	EAGAIN = -3,
 	EFAULT = -4,
 	EINVAL = -5,
+	EWOULDBLOCK = -6,
 }
 
 __gshared extern(C) long errno;
@@ -172,22 +173,25 @@ void sys_sendmsg(ulong pid, ulong rid, ulong len, void* data) {
 	}
 	errno = res;
 }
-// - (0e) sys_recvmsg(*msg, *arena, maxlen)
 struct Message {
 	ulong srcpid;
 	ulong rid;
 	ulong len;
 }
-void sys_recvmsg(Message* msg, void* arena, ulong maxlen) { 
+long sys_recvmsg(Message* msg, void* arena, ulong maxlen, bool block) {
+	ulong x;
 	long res;
+	ulong blocki = block;
 	asm {
 		mov RDI, msg;
 		mov RSI, arena;
 		mov RDX, maxlen;
+		mov RCX, blocki;
 		int 0x1e;
 		mov res, RAX;
 	}
 	errno = res;
+	return res;
 }
 // - (0e) sys_getpid() -> pid
 // - (0f) sys_getuid() -> uid

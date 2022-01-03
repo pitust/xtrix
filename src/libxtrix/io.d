@@ -126,6 +126,7 @@ string tr_err(long er) {
 	if (er == error.EAGAIN) { return "Resource temporarily unavailable"; }
 	if (er == error.EFAULT) { return "Bad address"; }
 	if (er == error.EINVAL) { return "Invalid operation"; }
+	if (er == error.EWOULDBLOCK) { return "Operation would block"; }
 	printf("warn: unknown error: {}", er);
 	return "Unknown error";
 }

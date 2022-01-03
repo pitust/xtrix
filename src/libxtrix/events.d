@@ -3,16 +3,65 @@ module libxtrix.events;
 import libxtrix.io;
 import libxtrix.gc;
 import libxtrix.syscall;
+import libxtrix.libc.string;
 
-alias RPCPredicate = bool delegate(ulong pid, ulong rid, ubyte[] buf) @system;
-alias HandlerType = void delegate(ulong pid, ulong rid, ubyte[] buf) @system;
+alias RPCPredicate = bool delegate(ulong srcpid, ulong rid, ubyte[] buf) @system;
+alias HandlerType = void delegate(ulong srcpid, ulong rid, ubyte[] buf) @system;
+
 
 private __gshared void delegate() @system[] evl_actions = [];
 private __gshared RPCPredicate[] predicates = [];
+private __gshared RPCPredicate*[] callbacks = [];
 private __gshared bool in_ev_tick = false;
+private enum arenaptr = 0x8000_0000;
+private __gshared bool mapped_arena = false;
+private __gshared bool is_arena_in_use = false;
 
-void ev_pump() {
-    
+void ev_pump(bool blockx) {
+    if (!mapped_arena) {
+        sys_mmap(arenaptr, 16*1024);
+        mapped_arena = true;
+    }
+    assert(!is_arena_in_use); is_arena_in_use = true;
+    Message msg;
+    sys_recvmsg(&msg, cast(void*)arenaptr, 16*1024, blockx);
+    if (errno == error.EWOULDBLOCK) {
+        is_arena_in_use = false;
+        errno = 0;
+        return;
+    }
+    anoerr("sys_recvmsg");
+    ubyte[] xfer = alloc_array!(ubyte)(msg.len);
+    memcpy(cast(byte*)xfer.ptr, cast(byte*)arenaptr, msg.len);
+    is_arena_in_use = false;
+    if (msg.rid & 1) {
+        ulong subrid = msg.rid >> 1;
+        if (subrid >= callbacks.length) {
+            printf("warn: bullshit request, rid > len(callbacks)");
+            return;
+        }
+        if (!callbacks[subrid]) {
+            printf("warn: bullshit request, callbacks[rid] is null");
+            return;
+        }
+        RPCPredicate* cb = callbacks[subrid];
+        callbacks[subrid] = null;
+        (*cb)(msg.srcpid, msg.rid|1, xfer);
+    } else {
+        foreach (pred; predicates) {
+            if (pred(msg.srcpid, msg.rid|1, xfer)) return;
+        }
+    }
+}
+ulong ev_bind_callback(RPCPredicate cbfn) {
+    RPCPredicate* pred = alloc!(RPCPredicate)(cbfn);
+    foreach (i; 0 .. callbacks.length) {
+        if (callbacks[i]) continue;
+        callbacks[i] = pred;
+        return i << 1;
+    }
+    callbacks = concat(callbacks, pred);
+    return (callbacks.length - 1) << 1;
 }
 void ev_tick() {
     assert(!in_ev_tick, "ev_tick cannot be called in an event context!");
@@ -27,7 +76,7 @@ void ev_tick() {
 void ev_loop() {
     while (true) {
         ev_tick();
-        ev_pump();
+        ev_pump(evl_actions.length == 0 ? true : false);
     }
 }
 void ev_settle() {
