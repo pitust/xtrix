@@ -31,11 +31,11 @@ int _main(ulong argc, char** argv) {
 	Message header;
 	ev_on(delegate bool(pid, rid, buf) {
 		if (buf.length != 2) return false;
-        printf("2-byte request: {} {}", buf[0], buf[1]);
+		printf("2-byte request: {} {}", buf[0], buf[1]);
 		ubyte[2] data = [4, 20];
-    	sys_sendmsg(pid, rid, 2, data.ptr);
-        return true;
-    });
+		sys_sendmsg(pid, rid, 2, data.ptr);
+		return true;
+	});
 	ev_loop();
 	return 0;
 }
