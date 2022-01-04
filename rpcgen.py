@@ -1,17 +1,44 @@
 from dataclasses import dataclass
 from os import makedirs
+from typing import Literal, Tuple
 
 @dataclass
 class t:
     string = 'string'
+    int = 'int'
+    uint = 'uint'
     void = 'void'
+    fallible_void = 'falliblevoid'
     event = 'event'
+    iohandle = 'handle'
+    offset = 'ulong'
+    size = 'ulong'
+    buffer = 'buffer'
+    def fallible(t: str) -> Tuple[Literal['fallible'], str]:
+        return ['fallible', t]
 
 
 rpc_services = {
-  'logger_rpc': {
-    'LogLine': [[t.string], t.event]
-  }
+  'logger': {
+    'LogLine': [[t.string], t.event],
+  },
+  'svc_discovery': {
+    'Find': [[t.string], t.int],
+    'Declare': [[t.int, t.string], t.void],
+  },
+  'ioprovider': {
+    'Read': [[t.iohandle, t.offset, t.size], t.fallible(t.buffer)],
+    'Write': [[t.iohandle, t.offset, t.size], t.fallible(t.buffer)],
+    'Close': [[t.iohandle], t.event],
+  },
+  'filesystem': {
+    'OpenFile': [[t.string, t.uint], t.fallible(t.iohandle)],
+    'OpenDir': [[t.string], t.fallible(t.iohandle)],
+    'MakeDir': [[t.string], t.fallible_void],
+    'RemoveDir': [[t.string], t.fallible_void],
+    'Unlink': [[t.string], t.fallible_void],
+    'GetStatbuf': [[t.string], t.fallible(t.buffer)],
+  },
 }
 
 funcid = 1

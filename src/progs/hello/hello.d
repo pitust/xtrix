@@ -20,7 +20,7 @@ import libxtrix.io;
 import libxtrix.events;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
-import xtrix_rpc.logger_rpc;
+import xtrix_rpc.logger;
 
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
@@ -28,7 +28,7 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
-	auto client = logger_rpc_client(3);
+	auto client = logger_client(3);
 	client.LogLine("hello!");
 	
 	ev_loop();
