@@ -1,7 +1,3 @@
 [submodule "scalable-font2"]
 	path = scalable-font2
 	url = https://gitlab.com/bztsrc/scalable-font2.git
-[submodule "phobos"]
-	path = phobos
-	url = https://github.com/dlang/phobos
-	branch = v2.094.0
