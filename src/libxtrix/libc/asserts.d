@@ -19,7 +19,6 @@ private extern(C) void do_exit(ulong code);
 extern (C) void __assert(char* assertion, char* file, int line) {
 
 	import libxtrix.io : printf;
-	import libxtrix.syscall : sys_exit;
 
 	printf("Assertion failed: '{}' at {}:{}", assertion, file, line);
 

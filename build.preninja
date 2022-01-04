@@ -11,20 +11,24 @@ rules:
     u-ldc:
       in: .d
       out: -u.o
-      cmd: ldc2 $dflags $dnosse --of $out $in -c --cache=build/ucache
+      cmd: ldc2 $dflags $dnosse --betterC --of $out $in -c --cache=build/ucache
+    u-ldc-betterc:
+      in: .d
+      out: -u.o
+      cmd: ldc2 $dflags $dnosse --betterC --of $out $in -c --cache=build/ucache
     nasm:
       in: .s
       out: .o
       cmd: nasm -gdwarf -felf64 -o $out $in
   reduce:
-    k-ld: ld.lld $in -o $out -T src/kernel.ld
-    ld: ld.lld $in -o $out -T src/userland.ld
+    k-ld: ld.lld $in -o $out -T src/kernel.ld -error-limit=0
+    ld: ld.lld $in -o $out -T src/userland.ld -error-limit=0
     prelink: ld.lld -r $in -o $out
     xorriso: sh tools/makeiso.sh $out $in
 
 env:
-  k-dflags: -code-model=kernel --cache=build/kcache
-  dflags: -I src --relocation-model=static --gdwarf --betterC -mtriple=x86_64-elf -I build/rsc
+  k-dflags: -code-model=kernel --cache=build/kcache --betterC
+  dflags: -I src/shim -I src --relocation-model=static --gdwarf -mtriple=x86_64-elf -I build/rsc
   dnosse: -mattr=-sse,-sse2,-sse3,-ssse3 --enable-color=true
   k-cflags: -mcmodel=kernel -Iscalable-font2
   cflags: -ggdb -target x86_64
@@ -34,18 +38,14 @@ actions:
   $libxk:
     prelink:
       _: build/libxk.o
-      u-ldc: src/libxk/*.d
-
-  $libsrpc:
-    prelink:
-      _: build/libsrpc.o
-      u-ldc: src/libsrpc/*.d
+      u-ldc-betterc: src/libxk/*.d
 
   $libxtrix:
     prelink:
       _: build/libxtrix.o
-      u-ldc: src/libxtrix/*.d
-      u-ldc: src/libxtrix/libc/*.d
+      # u-ldc: assets/object.d
+      u-ldc-betterc: src/libxtrix/*.d
+      u-ldc-betterc: src/libxtrix/libc/*.d
 
   xorriso:
     _: xtrix.iso

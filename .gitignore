@@ -6,3 +6,4 @@
 /.qemu-debugcon-addr
 /.ninja*
 /build.ninja
+/assets/object.d
