@@ -4,5 +4,5 @@
     "authors": ["pitust <piotr@stelmaszek.com>"],
     "homepage": "https://git.sr.ht/~pitust/xtrix",
     "buildOptions": ["betterC", "unittests"],
-    "importPaths": ["src"]
+    "importPaths": ["src", "build/rsc"]
 }

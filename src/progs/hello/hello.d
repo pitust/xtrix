@@ -20,7 +20,7 @@ import libxtrix.io;
 import libxtrix.events;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
-// import progs.init.init_srpc;
+import xtrix_rpc.logger_rpc;
 
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
@@ -28,14 +28,9 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
-	Message header;
-	ev_on(delegate bool(pid, rid, buf) {
-		if (buf.length != 2) return false;
-		printf("2-byte request: {} {}", buf[0], buf[1]);
-		ubyte[2] data = [4, 20];
-		sys_sendmsg(pid, rid, 2, data.ptr);
-		return true;
-	});
+	auto client = logger_rpc_client(3);
+	client.LogLine("hello!");
+	
 	ev_loop();
 	return 0;
 }

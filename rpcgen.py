@@ -47,14 +47,15 @@ for k, v in rpc_services.items():
             in enumerate(args)
         ])))
         code.append('\t\tByteBuffer buf;')
+        code.append('\t\trpcutil_prepare(buf, {});'.format(nam2id[fnid]))
         for aid, aty in enumerate(args):
             code.append('\t\trpcutil_encode_{}(buf, a_{});'.format(aty, aid))
         if ret == t.event:
-            code.append('\t\trpcutil_submit_ev(this.pid, {}, buf);'.format(nam2id[fnid]))
+            code.append('\t\trpcutil_submit_ev(this.pid, buf);')
         elif ret == t.void:
-            code.append('\t\trpcutil_submit_sig(this.pid, {}, buf);'.format(nam2id[fnid]))
+            code.append('\t\trpcutil_submit_sig(this.pid, buf);')
         else:
-            code.append('\t\tFuture!(ByteBuffer) buffut = rpcutil_submit(this.pid, {}, buf);'.format(nam2id[fnid]))
+            code.append('\t\tFuture!(ByteBuffer) buffut = rpcutil_submit(this.pid, buf);')
             code.append('\t\treturn buffut.then(newbuf => rpcutil_decode_{}(newbuf))'.format(ret))
         code.append('\t}')
     code.append('}')
