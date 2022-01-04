@@ -1,1 +1,1 @@
-preninja && ninja
+preninja && ninja clean && python3 rpcgen.py && ninja run
