@@ -35,7 +35,7 @@ string rpcutil_decode_string(ubyte[] data, ref ulong off) {
 
 void rpcutil_encode_uint(ref ByteBuffer buf, uint i) { buf.writeRaw(&i, 4); }
 void rpcutil_encode_string(ref ByteBuffer buf, string str) {
-    uint i = cast(uint)buf.size;
+    uint i = cast(uint)str.length;
     rpcutil_encode_uint(buf, i);
     foreach (chr; str) {
         buf << cast(ubyte)chr;
