@@ -11,7 +11,7 @@ alias HandlerType = void delegate(ulong srcpid, ulong rid, ubyte[] buf) @system;
 
 private __gshared void delegate() @system[] evl_actions = [];
 private __gshared RPCPredicate[] predicates = [];
-private __gshared RPCPredicate*[] callbacks = [];
+private __gshared HandlerType*[] callbacks = [];
 private __gshared bool in_ev_tick = false;
 private enum arenaptr = 0x8000_0000;
 private __gshared bool mapped_arena = false;
@@ -45,7 +45,7 @@ void ev_pump(bool blockx) {
             printf("warn: bullshit request, callbacks[rid] is null");
             return;
         }
-        RPCPredicate* cb = callbacks[subrid];
+        HandlerType* cb = callbacks[subrid];
         callbacks[subrid] = null;
         callbacks_hot--;
         (*cb)(msg.srcpid, msg.rid|1, xfer);
@@ -55,8 +55,8 @@ void ev_pump(bool blockx) {
         }
     }
 }
-ulong ev_bind_callback(RPCPredicate cbfn) {
-    RPCPredicate* pred = alloc!(RPCPredicate)(cbfn);
+ulong ev_bind_callback(HandlerType cbfn) {
+    HandlerType* pred = alloc!(HandlerType)(cbfn);
     callbacks_hot++;
     foreach (i; 0 .. callbacks.length) {
         if (callbacks[i]) continue;
@@ -79,7 +79,7 @@ void ev_tick() {
 void ev_loop() {
     while (callbacks_hot || predicates.length || evl_actions.length) {
         ev_tick();
-        ev_pump(false);
+        ev_pump(evl_actions.length == 0); // HACK: this almost definitely has a bug
     }
 }
 void ev_settle() {
@@ -107,18 +107,19 @@ enum FutureState {
 }
 
 template _flatten_future(T) {
-    static if (is(T U : Future!(Future!U))) {
+    static if (is(T U : future!(future!(U)*)*)) {
         static assert("prohibited recursive future!");
-    } else static if(is(T U : Future!U)) {
+    } else static if(is(T U : future!(U)*)) {
         alias _flatten_future = Future!U;
     } else {
+        alias haxx = Future!int;
         alias _flatten_future = Future!T;
     }
 }
 template _future_type(T) {
-    static if (is(T U : Future!(Future!U))) {
+    static if (is(T U : future!(future!(U)*)*)) {
         static assert("prohibited recursive future!");
-    } else static if(is(T U : Future!U)) {
+    } else static if(is(T U : future!(U)*)) {
         alias _future_type = U;
     } else {
         alias _future_type = T;
@@ -126,8 +127,8 @@ template _future_type(T) {
 }
 
 _flatten_future!T _do_flatten_future(T)(T delegate() value) {
-    static if (is(T U : Future!U)) {
-        return value;
+    static if (is(T U : future!(U)*)) {
+        return value();
     } else {
         _flatten_future!T fut = newFuture!(_future_type!T)();
         ev_next_tick(() { fut.resolve(value()); });
@@ -160,12 +161,13 @@ struct signal {
     }
     _flatten_future!T then(T)(T delegate() @system cb) {
         assert(!dlgt);
+        pragma(msg, "Flatten " ~ T.stringof ~ " into " ~ (_flatten_future!T).stringof);
         if (state == FutureState.pending) {
             _flatten_future!T fut = newFuture!(_future_type!T)();
             dlgt = () {
-                static if (is(T U : Future!U)) {
+                static if (is(T U : future!(U)*)) {
                     _flatten_future!T fut2 = cb();
-                    fut2.then((rval) {
+                    fut2.then((ref rval) {
                         fut.resolve(rval);
                     });
                 } else {
@@ -209,13 +211,13 @@ struct future(T) {
         ev_next_tick(() { cb(*value); sig.resolve(); });
         return sig;
     }
-    _flatten_future!T then(T)(T delegate(ref T val) cb) {
+    _flatten_future!U then(U)(U delegate(ref T val) @system cb) {
         assert(!dlgt);
         if (state == FutureState.pending) {
-            _flatten_future!T fut = newFuture!(_future_type!T)();
+            _flatten_future!U fut = newFuture!(_future_type!U)();
             dlgt = () {
-                static if (is(T U : Future!U)) {
-                    _flatten_future!T fut2 = cb(*value);
+                static if (is(U V : Future!V)) {
+                    _flatten_future!U fut2 = cb(*value);
                     fut2.then((rval) {
                         fut.resolve(rval);
                     });
@@ -232,8 +234,18 @@ struct future(T) {
 Signal newSignal() {
     return alloc!(signal)();
 }
+Signal completedSignal() {
+    Signal sig = alloc!(signal)();
+    sig.resolve();
+    return sig;
+}
 Future!T newFuture(T)() {
     return alloc!(future!(T))();
+}
+Future!T completedFuture(T)(T tv) {
+    Future!T fut = newFuture!T();
+    fut.resolve(tv);
+    return fut;
 }
 
 alias Future(T) = future!(T)*;

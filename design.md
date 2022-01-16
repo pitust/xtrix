@@ -26,7 +26,7 @@
                 - ulong rid
                 - ulong len
      - Process stuff
-        - (0e) sys_getpid() -> pid
+        - (17) sys_getpid() -> pid
         - (0f) sys_getuid() -> uid
         - (10) sys_fork() -> 0=child cpid=parent
         - (11) sys_exec(elfptr, elfsz, argc, argv)

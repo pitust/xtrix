@@ -117,8 +117,8 @@ __gshared immutable(string)[] syscall_names = [
 	"sys_inb",
 	"sys_outb",
 	"sys_silent_exit",
-	"???",
-	"sys_getpid",
+	"sys_sendmsg",
+	"sys_recvmsg",
 	"sys_getuid",
 	"sys_fork",
 	"sys_exec",
@@ -303,7 +303,7 @@ void syscall_handler(ulong sys, Regs* r) {
 		wait:
 			if (pid !in procs) {
 				r.rax = error.EINVAL;
-				return;
+				break;
 			}
 			Thread* th = procs[pid];
 			if (!th.can_rx) {
@@ -313,7 +313,11 @@ void syscall_handler(ulong sys, Regs* r) {
 				goto wait;
 			}
 			KMessage* km = th.rxmsg;
-			if (km.len < len) { r.rax = error.EINVAL; return; }
+			if (km.len < len) {
+				current.sleepgen = system_sleep_gen;
+				r.rax = error.EINVAL;
+				break;
+			}
 			km.rid = rid;
 			km.srcpid = current.pid;
 			km.len = len;
@@ -337,6 +341,7 @@ void syscall_handler(ulong sys, Regs* r) {
 			msg.len = maxlen;
 			if (current.clients == 0 && !block) {
 				r.rax = error.EWOULDBLOCK;
+				system_sleep_gen += 1;
 				break;
 			}
 			current.can_rx = true;
@@ -362,7 +367,6 @@ void syscall_handler(ulong sys, Regs* r) {
 			}
 			current.rxmsg = null;
 			current.vm.copy_into(msgptr, &msg, KMessage.sizeof);
-
 			r.rax = 0;
 			break;
 		}

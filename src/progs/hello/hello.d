@@ -21,6 +21,7 @@ import libxtrix.events;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
 import xtrix_rpc.logger;
+import xtrix_rpc.svcdiscovery;
 
 
 /// _start is the OS-invoked entrypoint for xtrix user programs
@@ -28,8 +29,15 @@ pragma(mangle, "main") extern(C)
 int _main(ulong argc, char** argv) {
 	printf("{}: hello, world!", argv[0]);
 	
-	auto client = logger_client(3);
-	client.LogLine("hello!");
+	auto client = logger_client(2);
+	client.LogLine("Attempting to declare as hello...");
+	auto svcclient = svcdiscovery_client(2);
+	svcclient.Declare(3, "hello").then(() {
+		client.LogLine("Now discovering hello...");
+		return svcclient.Find("hello");
+	}).then((ref int pid) {
+		printf("hello => {}", pid);
+	});
 	
 	ev_loop();
 	return 0;
