@@ -6,7 +6,6 @@ import std.typecons;
 import libxk.hashmap;
 import libxtrix.syscall;
 import libxtrix.libc.malloc;
-import progs.init.init_srpc;
 import libxtrix.libc.string;
 
 struct phy { ulong base; mixin Proxy!(base); }

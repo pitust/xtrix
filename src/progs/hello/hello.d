@@ -37,6 +37,7 @@ int _main(ulong argc, char** argv) {
 		return svcclient.Find("hello");
 	}).then((ref int pid) {
 		printf("hello => {}", pid);
+		sys_exit(1);
 	});
 	
 	ev_loop();
